@@ -1,0 +1,30 @@
+/* Same tokens and components as the public site, so the console reads as one product. */
+@import "../../web/src/styles/global.css";
+
+@layer components {
+  mark.cite {
+    background: color-mix(in srgb, var(--warn) 30%, transparent);
+    color: inherit;
+    border-radius: 0.2rem;
+    padding: 0 0.1rem;
+    outline: 2px solid var(--warn);
+  }
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.1rem 0.45rem;
+    border-radius: 0.3rem;
+    white-space: nowrap;
+  }
+  .state-pending { background: var(--sunk); color: var(--ink-2); }
+  .state-approved { background: var(--ok-soft); color: var(--ok); }
+  .state-edited { background: var(--brand-soft); color: var(--brand-ink); }
+  .state-rejected { background: var(--bad-soft); color: var(--bad); }
+  .btn-sm { padding: 0.3rem 0.65rem; font-size: 0.82rem; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  textarea.field { font-family: var(--font-mono); font-size: 0.8rem; }
+}

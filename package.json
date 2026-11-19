@@ -16,10 +16,14 @@
     "preview": "npm run preview -w @myavedan/web",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc -p packages/schema && tsc -p packages/eligibility && tsc -p apps/api && npm run check -w @myavedan/web",
+    "check": "tsc -p packages/schema && tsc -p packages/eligibility && tsc -p apps/api && tsc -p apps/admin && npm run check -w @myavedan/web",
     "validate:snapshot": "tsx packages/schema/scripts/validate-snapshot.ts data/snapshot.json",
-    "dev:api": "npm run dev -w @myavedan/api",
-    "db:migrate:local": "npm run db:migrate:local -w @myavedan/api"
+    "build:admin": "npm run build -w @myavedan/admin",
+    "dev:admin": "npm run dev -w @myavedan/admin",
+    "dev:api": "npm run build:admin && npm run dev -w @myavedan/api",
+    "db:migrate:local": "npm run db:migrate:local -w @myavedan/api",
+    "db:seed:local": "npm run db:seed:local -w @myavedan/api",
+    "seed:review": "node apps/api/scripts/seed-review.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.10.5",

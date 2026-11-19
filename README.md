@@ -41,7 +41,8 @@ python -m pytest
 | `packages/schema` | The data contract: snapshot schema with validation rules, IST date helpers, `computeStatus()` |
 | `packages/eligibility` | Deterministic eligibility engine (age windows, relaxations, qualification, verdicts) |
 | `apps/web` | Astro + Preact public site: home, explore, notice pages with evidence and eligibility checker, admit cards, results, search, about/trust, legal drafts |
-| `apps/api` | Cloudflare Worker: health, signed ingest, error reports, approved-snapshot export |
+| `apps/api` | Cloudflare Worker: health, signed ingest, error reports, approved-snapshot export, review console API and hosting |
+| `apps/admin` | Review console (Preact): queue, side-by-side review against the notice, approval, error reports. See [docs/REVIEW_CONSOLE.md](docs/REVIEW_CONSOLE.md) |
 | `migrations` | D1 schema |
 | `pipeline` | Python pipeline: section map, grounding check, validation, signed ingest client; network and AI stages arrive in M3 |
 | `data/snapshot.json` | Sample notices (invented, marked `"sample": true`) the site builds from in development |

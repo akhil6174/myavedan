@@ -142,11 +142,15 @@ Stack versions chosen in M0: Node 24, Astro 7, Preact 10, Tailwind 4, Pagefind 1
 - [ ] Golden-set evaluation workflow; baseline accuracy recorded
 - **Done when:** a new notice on a staging source appears as a draft with evidence, and the eval reports critical-field accuracy.
 
-### M4 · Review console (weeks 5–9)
-- [ ] Queue sorted by deadline, tier and change type
-- [ ] Review screen: PDF page with highlighted snippet beside field cards; per-field approval for critical fields
-- [ ] Diff view for new versions; reject and reprocess actions
-- [ ] Publish queue, Worker cron, `repository_dispatch` to the publish workflow
+### M4 · Review console (weeks 5–9) — *console done; publishing step next*
+- [x] Queue sorted by deadline, tier and change type
+- [x] Review screen: notice text with highlighted quote beside field cards; per-field approve, edit, reject; grounding and check results on each field
+- [x] Changes since the live version marked; reject and send-back actions with reasons
+- [x] Approval checks every critical field and validates the record with the site's schema before anything is published
+- [x] Error reports screen
+- [x] Admin API behind Cloudflare Access (token verified in the Worker); local sign-in for development only
+- [ ] Owner: set up Cloudflare Access for `admin-staging.myavedan.in` (see `docs/REVIEW_CONSOLE.md`)
+- [ ] Publish step: Worker cron batches the publish queue and dispatches a site build from the approved snapshot
 - **Done when:** a reviewer approves a notice and it is live on staging within one publish cycle.
 
 ### M5 · Public launch scope (weeks 6–10)
