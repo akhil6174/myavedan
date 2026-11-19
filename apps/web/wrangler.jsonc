@@ -1,0 +1,27 @@
+// Public site: static files served by Cloudflare (Workers static assets). No server code.
+{
+  "name": "myavedan-web",
+  "account_id": "a6dca9a8edd3ef97196d824e8fd8dc56",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "404-page",
+    "html_handling": "force-trailing-slash"
+  },
+  "env": {
+    "staging": {
+      "name": "myavedan-web-staging",
+      "workers_dev": false,
+      "routes": [{ "pattern": "staging.myavedan.in", "custom_domain": true }]
+    },
+    "production": {
+      "name": "myavedan-web",
+      "workers_dev": false,
+      "routes": [
+        { "pattern": "myavedan.in", "custom_domain": true },
+        { "pattern": "www.myavedan.in", "custom_domain": true }
+      ]
+    }
+  }
+}
