@@ -5,6 +5,11 @@ compatibility_flags = ["nodejs_compat"]
 account_id = "a6dca9a8edd3ef97196d824e8fd8dc56"
 workers_dev = false
 
+[assets]
+directory = "../admin/dist"
+binding = "ASSETS"
+run_worker_first = true
+
 # Local development. `wrangler dev --local` keeps the database in .wrangler/.
 [[d1_databases]]
 binding = "DB"
@@ -14,6 +19,7 @@ migrations_dir = "../../migrations"
 
 [vars]
 ALLOWED_ORIGINS = "http://localhost:4321"
+ADMIN_HOST = "localhost"
 
 [triggers]
 crons = ["*/30 * * * *"]
@@ -22,7 +28,11 @@ crons = ["*/30 * * * *"]
 [env.staging]
 name = "myavedan-api-staging"
 workers_dev = false
-routes = [{ pattern = "api-staging.myavedan.in", custom_domain = true }]
+routes = [
+  { pattern = "api-staging.myavedan.in", custom_domain = true },
+  { pattern = "admin-staging.myavedan.in", custom_domain = true },
+]
+assets = { directory = "../admin/dist", binding = "ASSETS", run_worker_first = true }
 
 [[env.staging.d1_databases]]
 binding = "DB"
@@ -32,6 +42,7 @@ migrations_dir = "../../migrations"
 
 [env.staging.vars]
 ALLOWED_ORIGINS = "https://staging.myavedan.in"
+ADMIN_HOST = "admin-staging.myavedan.in"
 
 [env.staging.triggers]
 crons = ["*/30 * * * *"]
@@ -40,7 +51,11 @@ crons = ["*/30 * * * *"]
 [env.production]
 name = "myavedan-api"
 workers_dev = false
-routes = [{ pattern = "api.myavedan.in", custom_domain = true }]
+routes = [
+  { pattern = "api.myavedan.in", custom_domain = true },
+  { pattern = "admin.myavedan.in", custom_domain = true },
+]
+assets = { directory = "../admin/dist", binding = "ASSETS", run_worker_first = true }
 
 [[env.production.d1_databases]]
 binding = "DB"
@@ -50,9 +65,10 @@ migrations_dir = "../../migrations"
 
 [env.production.vars]
 ALLOWED_ORIGINS = "https://myavedan.in"
+ADMIN_HOST = "admin.myavedan.in"
 
 [env.production.triggers]
 crons = ["*/30 * * * *"]
 
 # Secrets per environment: `wrangler secret put NAME --env staging|production`
-#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT
+#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT, ACCESS_TEAM_DOMAIN, ACCESS_AUD, ADMIN_EMAILS (optional)

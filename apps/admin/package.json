@@ -1,0 +1,23 @@
+{
+  "name": "@myavedan/admin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Review console: reviewers check every critical field against the official notice before it goes live.",
+  "scripts": {
+    "dev": "vite --port 4322",
+    "build": "vite build",
+    "check": "tsc -p ."
+  },
+  "dependencies": {
+    "@myavedan/schema": "*",
+    "preact": "^10.26.4"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.6",
+    "@tailwindcss/vite": "^4.3.5",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^5.7.2",
+    "vite": "^7.0.0"
+  }
+}
