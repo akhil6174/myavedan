@@ -1,0 +1,35 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+.dev.vars
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+pipeline/.cache/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Local scratch
+*.local.json
+
+# Local tooling config
+.claude/
+
+# Internal documents stay out of the repository (it may become public)
+*.docx
+*.pdf
+!pipeline/golden/**/*.pdf

@@ -1,0 +1,58 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Search notices" description="Full-text search across every notice page on MyAvedan.">
+  <section class="border-b border-line bg-surface">
+    <div class="wrap py-8">
+      <h1 class="text-3xl sm:text-4xl">Search notices</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">
+        Searches the full text of every notice page: posts, rules, documents and dates. To filter by qualification or state, use
+        <a href="/explore/">Explore</a>.
+      </p>
+    </div>
+  </section>
+  <section class="wrap py-8">
+    <div id="search"></div>
+    <p id="search-unavailable" class="notice" hidden>
+      Search is built when the site is built (<code>npm run build</code>). It is not available in the development server. Use
+      <a href="/explore/">Explore</a> instead.
+    </p>
+  </section>
+</Base>
+
+<script>
+  // Pagefind writes its index and UI into /pagefind/ during the production build.
+  const unavailable = () => {
+    document.getElementById("search-unavailable")!.hidden = false;
+  };
+  const css = document.createElement("link");
+  css.rel = "stylesheet";
+  css.href = "/pagefind/pagefind-ui.css";
+  document.head.appendChild(css);
+  const script = document.createElement("script");
+  script.src = "/pagefind/pagefind-ui.js";
+  script.onload = () => {
+    const w = window as unknown as { PagefindUI?: new (opts: Record<string, unknown>) => unknown };
+    if (!w.PagefindUI) return unavailable();
+    const params = new URLSearchParams(location.search);
+    const ui = new w.PagefindUI({ element: "#search", showSubResults: true, showImages: false, resetStyles: false }) as {
+      triggerSearch?: (q: string) => void;
+    };
+    const q = params.get("q");
+    if (q && ui.triggerSearch) ui.triggerSearch(q);
+  };
+  script.onerror = unavailable;
+  document.body.appendChild(script);
+</script>
+
+<style is:global>
+  #search {
+    --pagefind-ui-primary: var(--brand);
+    --pagefind-ui-text: var(--ink);
+    --pagefind-ui-background: var(--surface);
+    --pagefind-ui-border: var(--line-2);
+    --pagefind-ui-tag: var(--sunk);
+    --pagefind-ui-font: var(--font-sans);
+  }
+</style>

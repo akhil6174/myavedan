@@ -1,0 +1,30 @@
+{
+  "name": "myavedan",
+  "private": true,
+  "description": "MyAvedan by TrutiAI: discover official recruitment notices, understand them, check eligibility, track what happens next.",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22.23.4"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @myavedan/web",
+    "build": "npm run build -w @myavedan/web",
+    "preview": "npm run preview -w @myavedan/web",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check": "tsc -p packages/schema && tsc -p packages/eligibility && tsc -p apps/api && npm run check -w @myavedan/web",
+    "validate:snapshot": "tsx packages/schema/scripts/validate-snapshot.ts data/snapshot.json",
+    "dev:api": "npm run dev -w @myavedan/api",
+    "db:migrate:local": "npm run db:migrate:local -w @myavedan/api"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^3.0.5"
+  }
+}

@@ -1,0 +1,20 @@
+---
+/** Evidence chip: shows page and section, opens the official PDF at that page, snippet on hover. */
+import type { Evidence } from "@myavedan/schema";
+
+interface Props {
+  ev: Evidence | null | undefined;
+  pdf: string;
+}
+const { ev, pdf } = Astro.props;
+const label = ev ? `p. ${ev.page}${ev.section ? ` §${ev.section}` : ""}` : "";
+---
+
+{
+  ev ? (
+    <a class="ev" href={`${pdf}#page=${ev.page}`} title={`Notice says: “${ev.snippet}”`} target="_blank" rel="noopener">
+      {label}
+      <span class="sr-only" data-pagefind-ignore>, open the official notice at page {ev.page}</span>
+    </a>
+  ) : null
+}

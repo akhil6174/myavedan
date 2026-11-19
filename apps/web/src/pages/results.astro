@@ -1,0 +1,28 @@
+---
+import Base from "../layouts/Base.astro";
+import UpdateList from "../components/UpdateList.astro";
+import { updates } from "../lib/snapshot";
+
+const results = updates(["result", "cutoff"]);
+const keys = updates(["answer_key"]);
+---
+
+<Base title="Results and answer keys" description="Results, answer keys and cut-off marks from official recruitment websites, linked to the original notice.">
+  <section class="border-b border-line bg-surface">
+    <div class="wrap py-8">
+      <h1 class="text-3xl sm:text-4xl">Results and answer keys</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">
+        Results, cut-off marks and answer keys, newest first, each linked to the recruitment it belongs to. Check your result on the
+        official website.
+      </p>
+    </div>
+  </section>
+  <section class="wrap py-8" aria-labelledby="res-h">
+    <h2 id="res-h" class="section-title">Results and cut-offs</h2>
+    <UpdateList items={results} empty="No results have been published for the notices we track yet." />
+  </section>
+  <section class="wrap pb-8" aria-labelledby="keys-h">
+    <h2 id="keys-h" class="section-title">Answer keys</h2>
+    <UpdateList items={keys} empty="No answer keys have been published for the notices we track yet." />
+  </section>
+</Base>

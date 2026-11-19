@@ -1,0 +1,202 @@
+---
+import Base from "../layouts/Base.astro";
+import OpportunityCard from "../components/OpportunityCard.astro";
+import { QUALIFICATION_LABEL, QualificationLevel, dateValue } from "@myavedan/schema";
+import { opportunities, statesInUse } from "../lib/snapshot";
+
+const states = statesInUse();
+const levels = QualificationLevel.options;
+
+const items = opportunities.map((o) => ({
+  o,
+  text: [o.title, o.organization.name, o.organization.short, o.advt_no, ...o.locations, ...o.posts.map((p) => p.name)]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase(),
+  states: [o.organization.state, ...o.locations].filter(Boolean).join("|"),
+  quals: o.qualification_levels.join("|"),
+  end: (dateValue(o.dates, "apply_end") ?? "9999-12-31").slice(0, 10),
+  notified: (dateValue(o.dates, "notification") ?? o.provenance.reviewed_at).slice(0, 10),
+}));
+---
+
+<Base title="Explore opportunities" description="Search and filter official government recruitment notices by qualification, state, status and deadline.">
+  <section class="border-b border-line bg-surface">
+    <div class="wrap py-8">
+      <h1 class="text-3xl sm:text-4xl">Explore opportunities</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">Filter by what you have and where you want to work. Status updates itself from the official dates.</p>
+
+      <form id="filters" class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,2fr)_repeat(5,minmax(0,1fr))]" role="search">
+        <div class="sm:col-span-2 lg:col-span-1">
+          <label for="f-q" class="mb-1 block text-xs text-ink-3">Keyword</label>
+          <input id="f-q" name="q" type="search" class="field" placeholder="Post, organisation, place" autocomplete="off" />
+        </div>
+        <div>
+          <label for="f-qual" class="mb-1 block text-xs text-ink-3">Qualification</label>
+          <select id="f-qual" name="qual" class="field">
+            <option value="">Any</option>
+            {levels.map((l) => <option value={l}>{QUALIFICATION_LABEL[l]}</option>)}
+          </select>
+        </div>
+        <div>
+          <label for="f-jur" class="mb-1 block text-xs text-ink-3">Government</label>
+          <select id="f-jur" name="jur" class="field">
+            <option value="">Any</option>
+            <option value="central">Central</option>
+            <option value="state">State or UT</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-state" class="mb-1 block text-xs text-ink-3">State</label>
+          <select id="f-state" name="state" class="field">
+            <option value="">Any</option>
+            {states.map((s) => <option value={s}>{s}</option>)}
+          </select>
+        </div>
+        <div>
+          <label for="f-status" class="mb-1 block text-xs text-ink-3">Status</label>
+          <select id="f-status" name="status" class="field">
+            <option value="">Not archived</option>
+            <option value="open">Open now</option>
+            <option value="upcoming">Opening soon</option>
+            <option value="closed">Closed</option>
+            <option value="updates">Admit card, key or result out</option>
+            <option value="all">Everything</option>
+          </select>
+        </div>
+        <div>
+          <label for="f-sort" class="mb-1 block text-xs text-ink-3">Sort</label>
+          <select id="f-sort" name="sort" class="field">
+            <option value="deadline">Deadline, soonest first</option>
+            <option value="newest">Newest notice first</option>
+          </select>
+        </div>
+      </form>
+      <p class="mt-3 text-xs text-ink-3">
+        “Deadline” puts open and upcoming opportunities first, ordered by last date; closed ones follow.
+      </p>
+    </div>
+  </section>
+
+  <section class="wrap py-8" aria-labelledby="results-h">
+    <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+      <h2 id="results-h" class="sr-only">Results</h2>
+      <p id="count" class="text-sm text-ink-2" aria-live="polite">{items.length} opportunities</p>
+      <a href="/explore/" id="clear" class="text-sm">Clear filters</a>
+    </div>
+    <ul id="results" class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {
+        items.map((it) => (
+          <li
+            data-item
+            data-text={it.text}
+            data-jur={it.o.organization.jurisdiction}
+            data-states={it.states}
+            data-quals={it.quals}
+            data-end={it.end}
+            data-notified={it.notified}
+          >
+            <OpportunityCard o={it.o} />
+          </li>
+        ))
+      }
+    </ul>
+    <div id="empty" class="notice mt-4" hidden>
+      <p class="font-medium text-ink">No opportunities match these filters.</p>
+      <p class="mt-1">Try a shorter keyword, or set Status to “Everything” to include archived notices.</p>
+    </div>
+  </section>
+</Base>
+
+<script>
+  import { computeStatus, type Status } from "@myavedan/schema/status";
+
+  const form = document.getElementById("filters") as HTMLFormElement;
+  const list = document.getElementById("results") as HTMLUListElement;
+  const count = document.getElementById("count") as HTMLElement;
+  const empty = document.getElementById("empty") as HTMLElement;
+  const items = [...list.querySelectorAll<HTMLLIElement>("li[data-item]")];
+
+  const statusOf = new Map<HTMLLIElement, Status>();
+  for (const li of items) {
+    const pill = li.querySelector<HTMLElement>("[data-live-status]");
+    try {
+      statusOf.set(li, computeStatus(JSON.parse(pill?.dataset.liveStatus ?? "")).status);
+    } catch {
+      statusOf.set(li, "upcoming");
+    }
+  }
+
+  // Start from the URL so links like /explore/?qual=graduate work.
+  const initial = new URLSearchParams(location.search);
+  for (const [key, value] of initial) {
+    const field = form.elements.namedItem(key);
+    if (field instanceof HTMLInputElement || field instanceof HTMLSelectElement) field.value = value;
+  }
+
+  const UPDATES: Status[] = ["admit_card_out", "answer_key_out", "result_out"];
+  function statusMatches(s: Status, want: string): boolean {
+    switch (want) {
+      case "":
+        return s !== "archived";
+      case "all":
+        return true;
+      case "updates":
+        return UPDATES.includes(s);
+      default:
+        return s === want;
+    }
+  }
+
+  const rank = (s: Status) => (s === "open" ? 0 : s === "upcoming" ? 1 : 2);
+  function byDeadline(a: HTMLLIElement, b: HTMLLIElement): number {
+    const ra = rank(statusOf.get(a)!);
+    const rb = rank(statusOf.get(b)!);
+    if (ra !== rb) return ra - rb;
+    const ea = a.dataset.end ?? "";
+    const eb = b.dataset.end ?? "";
+    return ra < 2 ? ea.localeCompare(eb) : eb.localeCompare(ea);
+  }
+  const byNewest = (a: HTMLLIElement, b: HTMLLIElement) => (b.dataset.notified ?? "").localeCompare(a.dataset.notified ?? "");
+
+  function apply() {
+    const data = new FormData(form);
+    const get = (k: string) => String(data.get(k) ?? "").trim();
+    const terms = get("q").toLowerCase().split(/\s+/).filter(Boolean);
+    const qual = get("qual");
+    const jur = get("jur");
+    const state = get("state");
+    const status = get("status");
+    const sort = get("sort") || "deadline";
+
+    let shown = 0;
+    for (const li of items) {
+      const ok =
+        terms.every((t) => (li.dataset.text ?? "").includes(t)) &&
+        (!qual || (li.dataset.quals ?? "").split("|").includes(qual)) &&
+        (!jur || (jur === "state" ? li.dataset.jur !== "central" : li.dataset.jur === jur)) &&
+        (!state || (li.dataset.states ?? "").split("|").includes(state)) &&
+        statusMatches(statusOf.get(li)!, status);
+      li.hidden = !ok;
+      if (ok) shown++;
+    }
+
+    [...items].sort(sort === "newest" ? byNewest : byDeadline).forEach((li) => list.appendChild(li));
+
+    count.textContent = `${shown} ${shown === 1 ? "opportunity" : "opportunities"}`;
+    empty.hidden = shown > 0;
+
+    const params = new URLSearchParams();
+    for (const [k, v] of data) if (String(v) && !(k === "sort" && v === "deadline")) params.set(k, String(v));
+    const qs = params.toString();
+    history.replaceState(null, "", qs ? `?${qs}` : location.pathname);
+  }
+
+  form.addEventListener("input", apply);
+  form.addEventListener("change", apply);
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    apply();
+  });
+  apply();
+</script>

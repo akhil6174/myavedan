@@ -1,0 +1,52 @@
+---
+import type { Opportunity } from "@myavedan/schema";
+import { QUALIFICATION_LABEL, dateValue, formatDate, formatDateTime } from "@myavedan/schema";
+import StatusPill from "./StatusPill.astro";
+import { jurisdictionLabel } from "../lib/snapshot";
+
+interface Props {
+  o: Opportunity;
+  headingLevel?: 2 | 3;
+}
+const { o, headingLevel = 3 } = Astro.props;
+const end = dateValue(o.dates, "apply_end");
+const Heading = headingLevel === 2 ? "h2" : "h3";
+---
+
+<article class="card relative flex h-full flex-col gap-3">
+  <div class="flex flex-wrap items-center justify-between gap-2">
+    <StatusPill o={o} />
+    {o.advt_no && <span class="font-mono text-xs text-ink-3">{o.advt_no}</span>}
+  </div>
+  <div>
+    <Heading class="text-lg leading-snug">
+      <a href={`/opportunity/${o.slug}/`} class="stretched text-ink no-underline hover:underline">{o.title}</a>
+    </Heading>
+    <p class="mt-1 text-sm text-ink-2">{o.organization.name} · {jurisdictionLabel(o)}</p>
+  </div>
+  <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+    <div>
+      <dt class="text-xs text-ink-3">Last date</dt>
+      <dd class="num font-medium">{end ? formatDateTime(end) : "Not announced"}</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-ink-3">Vacancies</dt>
+      <dd class="num font-medium">{o.total_vacancies !== null ? o.total_vacancies.toLocaleString("en-IN") : "Not stated"}</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-ink-3">Qualification</dt>
+      <dd>{o.qualification_levels.map((q) => QUALIFICATION_LABEL[q]).join(", ")}</dd>
+    </div>
+    <div>
+      <dt class="text-xs text-ink-3">Location</dt>
+      <dd>{o.locations.join(", ")}</dd>
+    </div>
+  </dl>
+  <p class="mt-auto flex items-center gap-1.5 border-t border-line pt-2.5 text-xs text-ink-3">
+    <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"
+      ><path d="m3.5 8.5 3 3 6-7" fill="none" stroke="var(--ok)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+      ></path></svg
+    >
+    Checked against the official notice · {formatDate(o.provenance.last_checked_at)}
+  </p>
+</article>

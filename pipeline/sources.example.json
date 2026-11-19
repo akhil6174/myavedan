@@ -1,0 +1,15 @@
+{
+  "_note": "Example registry entry for local runs. Real sources are chosen by the reviewer in M2 and stored in D1. Only official recruitment hosts belong here; never aggregator sites.",
+  "sources": [
+    {
+      "id": "src_example_board",
+      "organization_id": "org_example_board",
+      "url": "https://example.org/recruitment",
+      "kind": "html_list",
+      "official_hosts": ["example.org"],
+      "reason": "Sample entry: replace with an official recruitment page and say why it is included.",
+      "cadence_minutes": 180,
+      "tier": 1
+    }
+  ]
+}

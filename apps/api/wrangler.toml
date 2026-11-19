@@ -1,0 +1,34 @@
+name = "myavedan-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Local development. `wrangler dev --local` creates the database in .wrangler/ — no Cloudflare account needed.
+[[d1_databases]]
+binding = "DB"
+database_name = "myavedan"
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "../../migrations"
+
+[vars]
+ALLOWED_ORIGINS = "http://localhost:4321"
+
+# Publish trigger: checks the publish queue every 30 minutes (M4).
+[triggers]
+crons = ["*/30 * * * *"]
+
+# ---- staging: fill database_id after `wrangler d1 create myavedan-staging` (M1) ----
+[env.staging]
+name = "myavedan-api-staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "myavedan-staging"
+database_id = "REPLACE_AFTER_wrangler_d1_create"
+migrations_dir = "../../migrations"
+
+[env.staging.vars]
+ALLOWED_ORIGINS = "https://staging.myavedan.in"
+
+# Secrets (set with `wrangler secret put NAME --env staging`, locally in .dev.vars):
+#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT

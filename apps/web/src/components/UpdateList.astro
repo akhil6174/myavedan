@@ -1,0 +1,36 @@
+---
+import { EVENT_LABEL, formatDate } from "@myavedan/schema";
+import type { Update } from "../lib/snapshot";
+
+interface Props {
+  items: Update[];
+  empty?: string;
+}
+const { items, empty = "No updates yet." } = Astro.props;
+---
+
+{
+  items.length === 0 ? (
+    <p class="notice">{empty}</p>
+  ) : (
+    <ul class="divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
+      {items.map(({ event, opportunity }) => (
+        <li class="grid gap-x-4 gap-y-1 px-4 py-3 sm:grid-cols-[7.5rem_minmax(0,1fr)_auto] sm:items-center">
+          <span class="num font-mono text-xs text-ink-3">{formatDate(event.date)}</span>
+          <div class="min-w-0">
+            <p class="font-medium">
+              <span class="mr-2 rounded bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-brand-ink">{EVENT_LABEL[event.kind]}</span>
+              {event.title}
+            </p>
+            <p class="mt-0.5 text-sm text-ink-2">
+              <a href={`/opportunity/${opportunity.slug}/`}>{opportunity.title}</a> · {opportunity.organization.name}
+            </p>
+          </div>
+          <a class="btn justify-self-start text-sm sm:justify-self-end" href={event.link} target="_blank" rel="noopener">
+            Official link <span aria-hidden="true">↗</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
+}

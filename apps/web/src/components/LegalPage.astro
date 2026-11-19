@@ -1,0 +1,28 @@
+---
+import Base from "../layouts/Base.astro";
+
+interface Props {
+  title: string;
+  description: string;
+  updated: string;
+}
+const { title, description, updated } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <section class="border-b border-line bg-surface">
+    <div class="wrap py-8">
+      <h1 class="text-3xl sm:text-4xl">{title}</h1>
+      <p class="mt-2 text-sm text-ink-3">Last updated {updated}</p>
+    </div>
+  </section>
+  <div class="wrap py-6">
+    <p class="notice notice-warn max-w-[68ch]">
+      <strong>Draft.</strong> This text is a plain-language draft and has not yet been reviewed by legal counsel. It will be finalised before
+      public launch.
+    </p>
+    <div class="prose-page">
+      <slot />
+    </div>
+  </div>
+</Base>

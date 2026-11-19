@@ -1,0 +1,23 @@
+{
+  "name": "@myavedan/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Cloudflare Worker: health, ingest (pipeline → D1), corrections, snapshot export, cron.",
+  "scripts": {
+    "dev": "wrangler dev --local",
+    "deploy:staging": "wrangler deploy --env staging",
+    "db:migrate:local": "wrangler d1 migrations apply myavedan --local",
+    "db:seed:local": "wrangler d1 execute myavedan --local --file seed/dev.sql",
+    "db:migrate:staging": "wrangler d1 migrations apply myavedan-staging --env staging --remote"
+  },
+  "dependencies": {
+    "@myavedan/schema": "*",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250109.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.40.0"
+  }
+}

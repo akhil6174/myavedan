@@ -1,0 +1,72 @@
+---
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { isSample } from "../lib/snapshot";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+const {
+  title,
+  description = "Find official government recruitment notices, understand the rules, check your eligibility and keep track of every date.",
+} = Astro.props;
+const fullTitle = title === "MyAvedan" ? "MyAvedan · Find, understand and track government jobs" : `${title} · MyAvedan`;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://myavedan.in").href;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {isSample && <meta name="robots" content="noindex, nofollow" />}
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="MyAvedan" />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#5a3db4" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,600..800&display=swap" />
+  </head>
+  <body class="flex min-h-screen flex-col">
+    <a href="#main" class="skip">Skip to content</a>
+    <Header />
+    {
+      isSample && (
+        <div class="border-b border-warn bg-warn-soft" role="note">
+          <p class="wrap py-2 text-sm text-ink">
+            <strong>Sample data.</strong> These notices are invented to show how MyAvedan works. Organisations, numbers and links are
+            not real.
+          </p>
+        </div>
+      )
+    }
+    <main id="main" class="flex-1">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      // Recompute every status label from stored dates, in IST, at page load.
+      import { computeStatus, describeStatus, statusTone } from "@myavedan/schema/status";
+      for (const el of document.querySelectorAll<HTMLElement>("[data-live-status]")) {
+        try {
+          const info = computeStatus(JSON.parse(el.dataset.liveStatus ?? ""));
+          el.textContent = describeStatus(info);
+          el.dataset.tone = statusTone(info);
+          el.dataset.status = info.status;
+        } catch {
+          // Keep the build-time label.
+        }
+      }
+      document.dispatchEvent(new CustomEvent("myavedan:status-ready"));
+    </script>
+  </body>
+</html>

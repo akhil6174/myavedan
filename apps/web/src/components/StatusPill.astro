@@ -1,0 +1,17 @@
+---
+/**
+ * Status computed at build time, then recomputed in the browser on load (see Base.astro),
+ * so the label stays correct between builds.
+ */
+import type { Opportunity } from "@myavedan/schema";
+import { describeStatus, statusTone } from "@myavedan/schema/status";
+import { statusInput, statusNow } from "../lib/snapshot";
+
+interface Props {
+  o: Opportunity;
+}
+const { o } = Astro.props;
+const info = statusNow(o);
+---
+
+<span class="pill" data-tone={statusTone(info)} data-live-status={JSON.stringify(statusInput(o))}>{describeStatus(info)}</span>

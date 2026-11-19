@@ -1,0 +1,39 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="mt-16 border-t border-line bg-surface">
+  <div class="wrap grid gap-8 py-10 md:grid-cols-[1.4fr_1fr_1fr]">
+    <div class="max-w-prose">
+      <p class="font-display text-lg font-extrabold" style="font-stretch: 85%">MyAvedan</p>
+      <p class="mt-2 text-sm text-ink-2">
+        MyAvedan is an independent information and assistance platform developed by TrutiAI. It is not a government website and is
+        not affiliated with any recruiting authority unless explicitly stated. Always verify important details in the official
+        notification. AI-generated explanations may contain errors.
+      </p>
+    </div>
+    <nav aria-label="Trust and help" class="text-sm">
+      <p class="eyebrow mb-2">Trust</p>
+      <ul class="space-y-1.5">
+        <li><a href="/about/#how-we-verify">How we verify notices</a></li>
+        <li><a href="/about/#sources">Source policy</a></li>
+        <li><a href="/about/#corrections">Report an error</a></li>
+        <li><a href="/about/#ai">How we use AI</a></li>
+      </ul>
+    </nav>
+    <nav aria-label="Legal" class="text-sm">
+      <p class="eyebrow mb-2">Legal</p>
+      <ul class="space-y-1.5">
+        <li><a href="/privacy/">Privacy notice</a></li>
+        <li><a href="/terms/">Terms of use</a></li>
+        <li><a href="/disclaimer/">Disclaimer</a></li>
+      </ul>
+    </nav>
+  </div>
+  <div class="border-t border-line">
+    <div class="wrap flex flex-wrap justify-between gap-2 py-4 text-xs text-ink-3">
+      <span>A TrutiAI product · © {year} TrutiAI</span>
+      <span>Applications and payments always happen on the official portal.</span>
+    </div>
+  </div>
+</footer>

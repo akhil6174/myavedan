@@ -1,0 +1,120 @@
+---
+import Base from "../layouts/Base.astro";
+import OpportunityCard from "../components/OpportunityCard.astro";
+import UpdateList from "../components/UpdateList.astro";
+import { closingSoon, latestOpenings, updates } from "../lib/snapshot";
+
+const soon = closingSoon(3);
+const soonIds = new Set(soon.map((o) => o.id));
+const latest = latestOpenings(6).filter((o) => !soonIds.has(o.id));
+const recent = updates(["admit_card", "answer_key", "result", "cutoff"], 5);
+
+const quick = [
+  { href: "/explore/?qual=10th", label: "10th pass" },
+  { href: "/explore/?qual=12th", label: "12th pass" },
+  { href: "/explore/?qual=diploma", label: "Diploma" },
+  { href: "/explore/?qual=graduate", label: "Graduate" },
+  { href: "/explore/?qual=postgraduate", label: "Postgraduate" },
+  { href: "/explore/?jur=central", label: "Central government" },
+  { href: "/explore/?jur=state", label: "State-wise" },
+];
+
+const steps = [
+  { t: "Find", d: "Search official recruitment notices by qualification, state or keyword." },
+  { t: "Understand", d: "Read the key facts in plain language, each linked to the page of the notice it comes from." },
+  { t: "Check", d: "See whether you meet the age and qualification rules for each post, with the reason for every answer." },
+  { t: "Track", d: "Add deadlines to your calendar and follow admit cards and results for the same recruitment." },
+];
+---
+
+<Base title="MyAvedan">
+  <section class="border-b border-line bg-surface">
+    <div class="wrap grid gap-8 py-12 md:py-16 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
+      <div>
+        <p class="eyebrow">Government recruitment, made clear</p>
+        <h1 class="mt-3 text-4xl sm:text-5xl">Find opportunities that fit your profile</h1>
+        <p class="mt-4 max-w-2xl text-lg text-ink-2">
+          Official notices turned into clear facts you can check. Every date, fee and rule links to the page of the notice it comes from.
+        </p>
+        <form action="/explore/" method="get" role="search" class="mt-6 flex max-w-2xl flex-col gap-2 sm:flex-row">
+          <label for="hero-q" class="sr-only">Search opportunities</label>
+          <input
+            id="hero-q"
+            name="q"
+            type="search"
+            class="field flex-1 py-3 text-base"
+            placeholder="Try “clerk”, “engineer” or “Rajasthan”"
+            autocomplete="off"
+          />
+          <button class="btn btn-primary justify-center py-3 text-base" type="submit">Search</button>
+        </form>
+        <ul class="mt-5 flex flex-wrap gap-2" aria-label="Browse by qualification or government">
+          {quick.map((q) => <li><a class="chip" href={q.href}>{q.label}</a></li>)}
+        </ul>
+      </div>
+      <aside class="card bg-paper text-sm" aria-label="What checked means">
+        <p class="font-semibold text-ink">What “checked” means here</p>
+        <ul class="mt-2 space-y-1.5 text-ink-2">
+          <li>Only official recruitment websites are used as sources.</li>
+          <li>A person compares every date, fee and rule with the notice before it goes live.</li>
+          <li>Each fact shows the page it came from, like <span class="ev">p. 4 §5.1</span></li>
+        </ul>
+        <a class="mt-3 inline-block" href="/about/#how-we-verify">How we verify notices</a>
+      </aside>
+    </div>
+  </section>
+
+  {
+    soon.length > 0 && (
+      <section class="wrap pt-12" aria-labelledby="soon-h">
+        <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="soon-h" class="section-title mb-0">Closing soon</h2>
+          <a href="/explore/?status=open&sort=deadline">All open opportunities</a>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {soon.map((o) => <OpportunityCard o={o} />)}
+        </div>
+      </section>
+    )
+  }
+
+  {
+    latest.length > 0 && (
+      <section class="wrap pt-12" aria-labelledby="latest-h">
+        <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="latest-h" class="section-title mb-0">Latest openings</h2>
+          <a href="/explore/?sort=newest">See all</a>
+        </div>
+        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {latest.map((o) => <OpportunityCard o={o} />)}
+        </div>
+      </section>
+    )
+  }
+
+  <section class="wrap pt-12" aria-labelledby="updates-h">
+    <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+      <h2 id="updates-h" class="section-title mb-0">Admit cards and results</h2>
+      <span class="flex gap-4"><a href="/admit-cards/">Admit cards</a><a href="/results/">Results</a></span>
+    </div>
+    <UpdateList items={recent} />
+  </section>
+
+  <section class="wrap pt-14" aria-labelledby="how-h">
+    <h2 id="how-h" class="section-title">How MyAvedan helps</h2>
+    <ol class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {
+        steps.map((s, i) => (
+          <li class="card">
+            <span class="font-mono text-sm text-brand">{i + 1}</span>
+            <p class="mt-1 font-display text-lg font-bold" style="font-stretch: 88%">
+              {s.t}
+            </p>
+            <p class="mt-1 text-sm text-ink-2">{s.d}</p>
+          </li>
+        ))
+      }
+    </ol>
+    <p class="mt-4 text-sm text-ink-3">You always apply and pay on the official portal. MyAvedan never asks for portal passwords, OTPs or payments.</p>
+  </section>
+</Base>

@@ -1,0 +1,584 @@
+{
+  "generated_at": "2026-11-17T06:00:00+05:30",
+  "sample": true,
+  "opportunities": [
+    {
+      "id": "opp_essb_ja_2026",
+      "slug": "essb-junior-assistant-clerical-2026",
+      "sample": true,
+      "type": "job",
+      "title": "Junior Assistant and Clerical Posts Recruitment 2026",
+      "organization": { "name": "Example Staff Selection Board", "short": "ESSB", "jurisdiction": "central", "state": null, "domain": "example.org" },
+      "advt_no": "EX/2026/01",
+      "qualification_levels": ["graduate", "12th"],
+      "locations": ["All India"],
+      "total_vacancies": 1248,
+      "summary": {
+        "en": "Recruitment of 1,248 Junior Assistants, Data Entry Operators and Lower Division Clerks for central government offices across India. Graduates can apply for Junior Assistant; 12th pass candidates can apply for the other two posts. Applications are online only, from 16 November to 15 December 2026.",
+        "reviewed": true
+      },
+      "dates": [
+        { "kind": "notification", "value": "2026-11-10", "tentative": false, "evidence": { "page": 1, "snippet": "Date of publication: 10.11.2026" } },
+        { "kind": "apply_start", "value": "2026-11-16", "tentative": false, "evidence": { "page": 2, "section": "3", "snippet": "Online applications open: 16.11.2026" } },
+        { "kind": "apply_end", "value": "2026-12-15T23:59:00+05:30", "tentative": false, "evidence": { "page": 2, "section": "3", "snippet": "Last date for receipt of online applications: 15.12.2026 (23:59 hrs)" } },
+        { "kind": "fee_end", "value": "2026-12-16T23:00:00+05:30", "tentative": false, "evidence": { "page": 2, "section": "3", "snippet": "Last date for online fee payment: 16.12.2026 (23:00 hrs)" } },
+        { "kind": "correction_start", "value": "2026-12-18", "tentative": true, "evidence": { "page": 2, "section": "3", "snippet": "Window for application form correction: 18.12.2026 to 20.12.2026 (tentative)" } },
+        { "kind": "correction_end", "value": "2026-12-20", "tentative": true, "evidence": { "page": 2, "section": "3", "snippet": "Window for application form correction: 18.12.2026 to 20.12.2026 (tentative)" } },
+        { "kind": "exam", "value": null, "approx": "February 2027", "tentative": true, "evidence": { "page": 3, "section": "8", "snippet": "Computer Based Examination: February 2027 (tentative)" } }
+      ],
+      "posts": [
+        {
+          "id": "junior-assistant",
+          "name": "Junior Assistant",
+          "vacancies": 840,
+          "location": "All India",
+          "pay": "Pay Level 4 (₹25,500–81,100)",
+          "evidence": { "page": 2, "section": "4", "snippet": "Junior Assistant: 840 posts" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1999-01-02",
+              "born_on_or_before": "2009-01-01",
+              "as_on": "2027-01-01",
+              "stated": "18–27 years as on 01.01.2027 (born not before 02.01.1999 and not after 01.01.2009)",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "OBC (Non-Creamy Layer): 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 4, "section": "5.2", "snippet": "PwBD: 10 years over and above the relaxation admissible to the category" } },
+                { "applies_to": "ESM", "years": null, "cumulative": false, "evidence": { "page": 4, "section": "5.3", "snippet": "Ex-Servicemen: as per Government rules" } }
+              ],
+              "evidence": { "page": 4, "section": "5.1", "snippet": "Age limit: 18–27 years as on 01.01.2027" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "graduate",
+              "held_by": "2026-12-15",
+              "final_year_allowed": null,
+              "subjects": [],
+              "stated": "Bachelor's degree from a recognised university, held on or before the closing date",
+              "evidence": { "page": 5, "section": "6", "snippet": "Bachelor's Degree from a recognised University ... must possess the qualification on or before 15.12.2026" }
+            }
+          ]
+        },
+        {
+          "id": "data-entry-operator",
+          "name": "Data Entry Operator",
+          "vacancies": 300,
+          "location": "All India",
+          "pay": "Pay Level 4 (₹25,500–81,100)",
+          "evidence": { "page": 2, "section": "4", "snippet": "Data Entry Operator: 300 posts" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1999-01-02",
+              "born_on_or_before": "2009-01-01",
+              "as_on": "2027-01-01",
+              "stated": "18–27 years as on 01.01.2027",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "OBC (Non-Creamy Layer): 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 4, "section": "5.2", "snippet": "PwBD: 10 years over and above the relaxation admissible to the category" } },
+                { "applies_to": "ESM", "years": null, "cumulative": false, "evidence": { "page": 4, "section": "5.3", "snippet": "Ex-Servicemen: as per Government rules" } }
+              ],
+              "evidence": { "page": 4, "section": "5.1", "snippet": "Age limit: 18–27 years as on 01.01.2027" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-12-15",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass from a recognised board; candidates awaiting results are not eligible",
+              "evidence": { "page": 5, "section": "6", "snippet": "12th Standard pass ... candidates whose result is awaited are not eligible" }
+            }
+          ]
+        },
+        {
+          "id": "lower-division-clerk",
+          "name": "Lower Division Clerk",
+          "vacancies": 108,
+          "location": "All India",
+          "pay": "Pay Level 2 (₹19,900–63,200)",
+          "evidence": { "page": 2, "section": "4", "snippet": "Lower Division Clerk: 108 posts" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1999-01-02",
+              "born_on_or_before": "2009-01-01",
+              "as_on": "2027-01-01",
+              "stated": "18–27 years as on 01.01.2027",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "OBC (Non-Creamy Layer): 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 4, "section": "5.2", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 4, "section": "5.2", "snippet": "PwBD: 10 years over and above the relaxation admissible to the category" } },
+                { "applies_to": "ESM", "years": null, "cumulative": false, "evidence": { "page": 4, "section": "5.3", "snippet": "Ex-Servicemen: as per Government rules" } }
+              ],
+              "evidence": { "page": 4, "section": "5.1", "snippet": "Age limit: 18–27 years as on 01.01.2027" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-12-15",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass from a recognised board; candidates awaiting results are not eligible",
+              "evidence": { "page": 5, "section": "6", "snippet": "12th Standard pass ... candidates whose result is awaited are not eligible" }
+            },
+            {
+              "kind": "other",
+              "label": "Typing speed",
+              "stated": "35 words per minute in English or 30 in Hindi on a computer, tested at the skill test stage",
+              "blocking": false,
+              "evidence": { "page": 5, "section": "6.2", "snippet": "typing speed of 35 w.p.m. in English or 30 w.p.m. in Hindi on computer" }
+            }
+          ]
+        }
+      ],
+      "fees": [
+        { "applies_to": "General, OBC and EWS", "amount_inr": 100, "evidence": { "page": 6, "section": "7", "snippet": "Fee payable: ₹100 (Rupees One Hundred only)" } },
+        { "applies_to": "Women, SC, ST, PwBD and Ex-Servicemen", "amount_inr": 0, "evidence": { "page": 6, "section": "7", "snippet": "Women candidates and candidates belonging to SC, ST, PwBD and Ex-Servicemen are exempted from payment of fee" } }
+      ],
+      "selection_stages": ["Computer based examination", "Skill test (Data Entry Operator and Lower Division Clerk)", "Document verification", "Medical examination"],
+      "documents_required": ["Recent photograph, JPG, 20–50 KB", "Signature, JPG, 10–20 KB", "Educational certificates", "Category certificate, if claiming reservation", "PwBD certificate, if applicable"],
+      "events": [
+        { "kind": "corrigendum", "date": "2026-11-14", "title": "Corrigendum 1: application correction window added", "link": "https://example.org/notices/ex-2026-01-corrigendum-1.pdf", "evidence": null }
+      ],
+      "links": {
+        "notice_pdf": "https://example.org/notices/ex-2026-01.pdf",
+        "official_page": "https://example.org/recruitment",
+        "apply": "https://apply.example.org/"
+      },
+      "provenance": {
+        "version": 2,
+        "sha256": "3f9a1c7e5b2d4086a1f3c9e7b5d2a4086c1e3f5a7b9d2c4e6f8a0b1c3d5e7f9a",
+        "retrieved_at": "2026-11-16T09:10:00+05:30",
+        "reviewed_at": "2026-11-16T14:20:00+05:30",
+        "last_checked_at": "2026-11-17T06:00:00+05:30",
+        "change_note": "Corrigendum 1 added the application correction window."
+      }
+    },
+    {
+      "id": "opp_esprb_constable_2026",
+      "slug": "esprb-constable-2026",
+      "sample": true,
+      "type": "job",
+      "title": "Police Constable Recruitment 2026",
+      "organization": { "name": "Example State Police Recruitment Board", "short": "ESPRB", "jurisdiction": "state", "state": "Rajasthan", "domain": "example.net" },
+      "advt_no": "PRB/CON/2026/07",
+      "qualification_levels": ["12th"],
+      "locations": ["Rajasthan"],
+      "total_vacancies": 2000,
+      "summary": {
+        "en": "Recruitment of 2,000 police constables (general duty and driver) for the state. 12th pass candidates domiciled in the state can apply. Applications open on 1 December 2026 and close on 31 December 2026. Selection includes a written exam and physical tests.",
+        "reviewed": true
+      },
+      "dates": [
+        { "kind": "notification", "value": "2026-11-12", "tentative": false, "evidence": { "page": 1, "snippet": "Advertisement No. PRB/CON/2026/07 dated 12.11.2026" } },
+        { "kind": "apply_start", "value": "2026-12-01", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Online application: 01.12.2026 to 31.12.2026" } },
+        { "kind": "apply_end", "value": "2026-12-31", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Online application: 01.12.2026 to 31.12.2026" } },
+        { "kind": "exam", "value": null, "approx": "April 2027", "tentative": true, "evidence": { "page": 7, "section": "11", "snippet": "The written examination is likely to be held in April 2027" } }
+      ],
+      "posts": [
+        {
+          "id": "constable-general-duty",
+          "name": "Constable (General Duty)",
+          "vacancies": 1700,
+          "location": "Rajasthan",
+          "pay": "Pay Matrix Level 5",
+          "evidence": { "page": 2, "section": "3", "snippet": "Constable (General Duty): 1700" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "2002-01-02",
+              "born_on_or_before": "2009-01-01",
+              "as_on": "2027-01-01",
+              "stated": "18–25 years as on 01.01.2027",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } }
+              ],
+              "evidence": { "page": 3, "section": "5", "snippet": "Age: minimum 18 years and maximum 25 years as on 01.01.2027" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-12-31",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass (Senior Secondary) from a recognised board by the closing date",
+              "evidence": { "page": 3, "section": "6", "snippet": "Senior Secondary (10+2) examination passed from a recognised Board" }
+            },
+            {
+              "kind": "other",
+              "label": "Domicile",
+              "stated": "Must be a domicile of the state; a domicile certificate is checked at document verification",
+              "blocking": true,
+              "evidence": { "page": 3, "section": "4", "snippet": "Only bona fide residents of the State are eligible" }
+            },
+            {
+              "kind": "other",
+              "label": "Physical standards",
+              "stated": "Height 168 cm (men) or 152 cm (women); chest 81–86 cm for men. Measured at the physical test",
+              "blocking": false,
+              "evidence": { "page": 4, "section": "7", "snippet": "Height: Male 168 cm, Female 152 cm. Chest (Male): 81 cm unexpanded, 86 cm expanded" }
+            }
+          ]
+        },
+        {
+          "id": "constable-driver",
+          "name": "Constable (Driver)",
+          "vacancies": 300,
+          "location": "Rajasthan",
+          "pay": "Pay Matrix Level 5",
+          "evidence": { "page": 2, "section": "3", "snippet": "Constable (Driver): 300" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "2002-01-02",
+              "born_on_or_before": "2009-01-01",
+              "as_on": "2027-01-01",
+              "stated": "18–25 years as on 01.01.2027",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "5", "snippet": "OBC, SC and ST candidates of the State: 5 years" } }
+              ],
+              "evidence": { "page": 3, "section": "5", "snippet": "Age: minimum 18 years and maximum 25 years as on 01.01.2027" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-12-31",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass (Senior Secondary) from a recognised board by the closing date",
+              "evidence": { "page": 3, "section": "6", "snippet": "Senior Secondary (10+2) examination passed from a recognised Board" }
+            },
+            {
+              "kind": "other",
+              "label": "Domicile",
+              "stated": "Must be a domicile of the state; a domicile certificate is checked at document verification",
+              "blocking": true,
+              "evidence": { "page": 3, "section": "4", "snippet": "Only bona fide residents of the State are eligible" }
+            },
+            {
+              "kind": "other",
+              "label": "Driving licence",
+              "stated": "Valid heavy motor vehicle licence held on the closing date",
+              "blocking": true,
+              "evidence": { "page": 3, "section": "6.1", "snippet": "must possess a valid Heavy Motor Vehicle driving licence on the last date of application" }
+            }
+          ]
+        }
+      ],
+      "fees": [
+        { "applies_to": "General and candidates from other states", "amount_inr": 600, "evidence": { "page": 5, "section": "8", "snippet": "General category: ₹600" } },
+        { "applies_to": "OBC, SC and ST of the state", "amount_inr": 400, "evidence": { "page": 5, "section": "8", "snippet": "OBC, SC, ST of the State: ₹400" } }
+      ],
+      "selection_stages": ["Written examination", "Physical efficiency test", "Physical measurement", "Driving test (Driver post)", "Document verification", "Medical examination"],
+      "documents_required": ["Domicile certificate", "12th marksheet", "Category certificate, if applicable", "Heavy motor vehicle licence (Driver post)", "Recent photograph and signature"],
+      "events": [],
+      "links": {
+        "notice_pdf": "https://example.net/recruitment/con-2026-07.pdf",
+        "official_page": "https://example.net/recruitment",
+        "apply": "https://recruitment.example.net/apply"
+      },
+      "provenance": {
+        "version": 1,
+        "sha256": "b7e2d9f4a1c6083e5d7f9b1a3c5e70924b6d8f0a2c4e6b8d0f2a4c6e8b0d2f41",
+        "retrieved_at": "2026-11-12T18:40:00+05:30",
+        "reviewed_at": "2026-11-13T11:05:00+05:30",
+        "last_checked_at": "2026-11-17T06:00:00+05:30"
+      }
+    },
+    {
+      "id": "opp_epsc_ae_civil_2026",
+      "slug": "epsc-assistant-engineer-civil-2026",
+      "sample": true,
+      "type": "job",
+      "title": "Assistant Engineer (Civil) Recruitment 2026",
+      "organization": { "name": "Example Public Service Commission", "short": "EPSC", "jurisdiction": "state", "state": "Maharashtra", "domain": "example.com" },
+      "advt_no": "EPSC/AE/2026/12",
+      "qualification_levels": ["graduate"],
+      "locations": ["Maharashtra"],
+      "total_vacancies": 156,
+      "summary": {
+        "en": "Recruitment of 156 Assistant Engineers (Civil) for state government departments. A degree in civil engineering is required. Applications closed on 31 October 2026. Admit cards for the preliminary exam on 29 November 2026 are now available.",
+        "reviewed": true
+      },
+      "dates": [
+        { "kind": "notification", "value": "2026-09-20", "tentative": false, "evidence": { "page": 1, "snippet": "Advertisement No. EPSC/AE/2026/12, dated 20.09.2026" } },
+        { "kind": "apply_start", "value": "2026-10-01", "tentative": false, "evidence": { "page": 1, "section": "1", "snippet": "Online applications from 01.10.2026" } },
+        { "kind": "apply_end", "value": "2026-10-31T18:00:00+05:30", "tentative": false, "evidence": { "page": 1, "section": "1", "snippet": "up to 31.10.2026, 18:00 hours" } },
+        { "kind": "exam", "value": "2026-11-29", "tentative": false, "evidence": { "page": 6, "section": "10", "snippet": "Preliminary Examination: 29.11.2026" } },
+        { "kind": "admit_card", "value": "2026-11-12", "tentative": false, "evidence": null }
+      ],
+      "posts": [
+        {
+          "id": "assistant-engineer-civil",
+          "name": "Assistant Engineer (Civil)",
+          "vacancies": 156,
+          "location": "Maharashtra",
+          "pay": "S-20 (₹56,100–1,77,500)",
+          "evidence": { "page": 2, "section": "2", "snippet": "Assistant Engineer (Civil), Group B: 156 posts" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1988-11-02",
+              "born_on_or_before": "2007-11-01",
+              "as_on": "2026-11-01",
+              "stated": "19–38 years as on 01.11.2026",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4.2", "snippet": "Backward classes: 5 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4.2", "snippet": "Backward classes: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4.2", "snippet": "Backward classes: 5 years" } },
+                { "applies_to": "PwBD", "years": 7, "cumulative": false, "evidence": { "page": 3, "section": "4.3", "snippet": "Persons with disabilities: upper age limit 45 years" } }
+              ],
+              "evidence": { "page": 3, "section": "4.1", "snippet": "Minimum 19 years and maximum 38 years as on 01.11.2026" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "graduate",
+              "held_by": "2026-10-31",
+              "final_year_allowed": false,
+              "subjects": ["Civil Engineering"],
+              "stated": "Degree in Civil Engineering from a recognised university, held by the closing date",
+              "evidence": { "page": 3, "section": "5", "snippet": "Degree in Civil Engineering of a statutory University" }
+            }
+          ]
+        }
+      ],
+      "fees": [
+        { "applies_to": "Unreserved", "amount_inr": 719, "evidence": { "page": 5, "section": "8", "snippet": "Unreserved: ₹719" } },
+        { "applies_to": "Backward classes, EWS and PwBD", "amount_inr": 449, "evidence": { "page": 5, "section": "8", "snippet": "Backward classes / EWS / PwBD: ₹449" } }
+      ],
+      "selection_stages": ["Preliminary examination", "Main examination", "Interview", "Document verification"],
+      "documents_required": ["Engineering degree certificate and marksheets", "Category or non-creamy layer certificate, if applicable", "Domicile certificate", "Photo ID"],
+      "events": [
+        { "kind": "admit_card", "date": "2026-11-12", "title": "Admit cards released for the preliminary exam on 29 Nov 2026", "link": "https://example.com/admit-card/ae-2026-12", "evidence": null }
+      ],
+      "links": {
+        "notice_pdf": "https://example.com/advt/ae-2026-12.pdf",
+        "official_page": "https://example.com/recruitment",
+        "apply": null
+      },
+      "provenance": {
+        "version": 1,
+        "sha256": "c41d8e2f6a9b3075e1c5a9d3f7b20486a2e6c0f4b8d13579bdf02468ace13579",
+        "retrieved_at": "2026-09-21T09:30:00+05:30",
+        "reviewed_at": "2026-09-21T16:45:00+05:30",
+        "last_checked_at": "2026-11-17T06:00:00+05:30"
+      }
+    },
+    {
+      "id": "opp_ecra_mts_2026",
+      "slug": "ecra-multi-tasking-staff-2026",
+      "sample": true,
+      "type": "job",
+      "title": "Multi-Tasking Staff Recruitment 2026",
+      "organization": { "name": "Example Central Recruitment Agency", "short": "ECRA", "jurisdiction": "central", "state": null, "domain": "agency.example.org" },
+      "advt_no": "ECRA/MTS/2026/03",
+      "qualification_levels": ["10th"],
+      "locations": ["All India"],
+      "total_vacancies": 3400,
+      "summary": {
+        "en": "Recruitment of 3,400 Multi-Tasking Staff (non-technical) for central offices across India. 10th pass candidates aged 18 to 25 can apply. Applications close on 20 November 2026.",
+        "reviewed": true
+      },
+      "dates": [
+        { "kind": "notification", "value": "2026-10-28", "tentative": false, "evidence": { "page": 1, "snippet": "Notice No. ECRA/MTS/2026/03 dated 28.10.2026" } },
+        { "kind": "apply_start", "value": "2026-11-01", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Submission of online applications: 01.11.2026 to 20.11.2026" } },
+        { "kind": "apply_end", "value": "2026-11-20", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Submission of online applications: 01.11.2026 to 20.11.2026" } },
+        { "kind": "exam", "value": null, "approx": "January 2027", "tentative": true, "evidence": { "page": 2, "section": "2", "snippet": "Schedule of examination: January 2027" } }
+      ],
+      "posts": [
+        {
+          "id": "mts-non-technical",
+          "name": "Multi-Tasking Staff (Non-Technical)",
+          "vacancies": 3400,
+          "location": "All India",
+          "pay": "Pay Level 1 (₹18,000–56,900)",
+          "evidence": { "page": 2, "section": "3", "snippet": "Multi-Tasking Staff: 3400 (tentative)" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "2001-11-21",
+              "born_on_or_before": "2008-11-20",
+              "as_on": "2026-11-20",
+              "stated": "18–25 years as on 20.11.2026 (born not before 21.11.2001 and not after 20.11.2008)",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "OBC: 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 3, "section": "4", "snippet": "PwBD: 10 years in addition to category relaxation" } },
+                { "applies_to": "ESM", "years": null, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "Ex-Servicemen: as admissible under Government orders" } }
+              ],
+              "evidence": { "page": 3, "section": "4", "snippet": "18–25 years as on 20.11.2026" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "10th",
+              "held_by": "2026-11-20",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "Matriculation (10th) pass from a recognised board by the closing date",
+              "evidence": { "page": 3, "section": "5", "snippet": "Matriculation Examination or equivalent passed from a recognised Board" }
+            }
+          ]
+        }
+      ],
+      "fees": [
+        { "applies_to": "General, OBC and EWS men", "amount_inr": 100, "evidence": { "page": 4, "section": "6", "snippet": "Fee payable: ₹100" } },
+        { "applies_to": "Women, SC, ST, PwBD and Ex-Servicemen", "amount_inr": 0, "evidence": { "page": 4, "section": "6", "snippet": "Women, SC, ST, PwBD and ESM candidates are exempted" } }
+      ],
+      "selection_stages": ["Computer based examination", "Document verification"],
+      "documents_required": ["Recent photograph, JPG, 20–50 KB", "Signature, JPG, 10–20 KB", "10th certificate", "Category certificate, if applicable"],
+      "events": [],
+      "links": {
+        "notice_pdf": "https://agency.example.org/notices/mts-2026-03.pdf",
+        "official_page": "https://agency.example.org/notices",
+        "apply": "https://agency.example.org/apply"
+      },
+      "provenance": {
+        "version": 1,
+        "sha256": "9e8d7c6b5a4f3e2d1c0b9a8f7e6d5c4b3a2f1e0d9c8b7a6f5e4d3c2b1a0f9e8d",
+        "retrieved_at": "2026-10-28T19:20:00+05:30",
+        "reviewed_at": "2026-10-29T10:15:00+05:30",
+        "last_checked_at": "2026-11-17T06:00:00+05:30"
+      }
+    },
+    {
+      "id": "opp_essb_steno_2026",
+      "slug": "essb-stenographer-2026",
+      "sample": true,
+      "type": "job",
+      "title": "Stenographer Grade C and D Recruitment 2026",
+      "organization": { "name": "Example Staff Selection Board", "short": "ESSB", "jurisdiction": "central", "state": null, "domain": "example.org" },
+      "advt_no": "EX/2026/04",
+      "qualification_levels": ["12th"],
+      "locations": ["All India"],
+      "total_vacancies": 412,
+      "summary": {
+        "en": "Recruitment of 412 stenographers (Grade C and Grade D) for central offices. The written exam was held on 10 August 2026. Results and cut-off marks were published on 5 November 2026; qualified candidates go on to the skill test.",
+        "reviewed": true
+      },
+      "dates": [
+        { "kind": "notification", "value": "2026-05-02", "tentative": false, "evidence": { "page": 1, "snippet": "Notice dated 02.05.2026" } },
+        { "kind": "apply_start", "value": "2026-05-05", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Online applications: 05.05.2026 to 04.06.2026 (23:00)" } },
+        { "kind": "apply_end", "value": "2026-06-04T23:00:00+05:30", "tentative": false, "evidence": { "page": 1, "section": "2", "snippet": "Online applications: 05.05.2026 to 04.06.2026 (23:00)" } },
+        { "kind": "exam", "value": "2026-08-10", "tentative": false, "evidence": { "page": 2, "section": "2", "snippet": "Computer Based Examination: 10.08.2026" } },
+        { "kind": "result", "value": "2026-11-05", "tentative": false, "evidence": null }
+      ],
+      "posts": [
+        {
+          "id": "stenographer-grade-c",
+          "name": "Stenographer Grade C",
+          "vacancies": 112,
+          "location": "All India",
+          "pay": "Pay Level 6",
+          "evidence": { "page": 2, "section": "3", "snippet": "Stenographer Grade C: 112" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1996-08-02",
+              "born_on_or_before": "2008-08-01",
+              "as_on": "2026-08-01",
+              "stated": "18–30 years as on 01.08.2026",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "OBC: 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 3, "section": "4", "snippet": "PwBD: 10 years over and above category relaxation" } }
+              ],
+              "evidence": { "page": 3, "section": "4", "snippet": "Grade C: 18–30 years as on 01.08.2026" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-06-04",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass from a recognised board by the closing date",
+              "evidence": { "page": 3, "section": "5", "snippet": "12th Standard or equivalent from a recognised Board" }
+            },
+            {
+              "kind": "other",
+              "label": "Stenography skill",
+              "stated": "Dictation at 100 words per minute for 10 minutes, tested at the skill test stage",
+              "blocking": false,
+              "evidence": { "page": 4, "section": "9", "snippet": "dictation for 10 minutes at the speed of 100 w.p.m." }
+            }
+          ]
+        },
+        {
+          "id": "stenographer-grade-d",
+          "name": "Stenographer Grade D",
+          "vacancies": 300,
+          "location": "All India",
+          "pay": "Pay Level 4",
+          "evidence": { "page": 2, "section": "3", "snippet": "Stenographer Grade D: 300" },
+          "rules": [
+            {
+              "kind": "dob_window",
+              "born_on_or_after": "1999-08-02",
+              "born_on_or_before": "2008-08-01",
+              "as_on": "2026-08-01",
+              "stated": "18–27 years as on 01.08.2026",
+              "relaxations": [
+                { "applies_to": "OBC", "years": 3, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "OBC: 3 years" } },
+                { "applies_to": "SC", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "ST", "years": 5, "cumulative": false, "evidence": { "page": 3, "section": "4", "snippet": "SC/ST: 5 years" } },
+                { "applies_to": "PwBD", "years": 10, "cumulative": true, "evidence": { "page": 3, "section": "4", "snippet": "PwBD: 10 years over and above category relaxation" } }
+              ],
+              "evidence": { "page": 3, "section": "4", "snippet": "Grade D: 18–27 years as on 01.08.2026" }
+            },
+            {
+              "kind": "qualification",
+              "min_level": "12th",
+              "held_by": "2026-06-04",
+              "final_year_allowed": false,
+              "subjects": [],
+              "stated": "12th pass from a recognised board by the closing date",
+              "evidence": { "page": 3, "section": "5", "snippet": "12th Standard or equivalent from a recognised Board" }
+            },
+            {
+              "kind": "other",
+              "label": "Stenography skill",
+              "stated": "Dictation at 80 words per minute for 10 minutes, tested at the skill test stage",
+              "blocking": false,
+              "evidence": { "page": 4, "section": "9", "snippet": "dictation for 10 minutes at the speed of 80 w.p.m." }
+            }
+          ]
+        }
+      ],
+      "fees": [
+        { "applies_to": "General, OBC and EWS", "amount_inr": 100, "evidence": { "page": 4, "section": "7", "snippet": "Fee payable: ₹100" } },
+        { "applies_to": "Women, SC, ST, PwBD and Ex-Servicemen", "amount_inr": 0, "evidence": { "page": 4, "section": "7", "snippet": "exempted from payment of fee" } }
+      ],
+      "selection_stages": ["Computer based examination", "Stenography skill test", "Document verification"],
+      "documents_required": ["12th certificate", "Category certificate, if applicable", "Photo ID"],
+      "events": [
+        { "kind": "admit_card", "date": "2026-07-28", "title": "Admit cards for the computer based exam on 10 Aug 2026", "link": "https://example.org/admit-card/steno-2026", "evidence": null },
+        { "kind": "answer_key", "date": "2026-08-20", "title": "Provisional answer keys and objection window", "link": "https://example.org/answer-keys/steno-2026", "evidence": null },
+        { "kind": "result", "date": "2026-11-05", "title": "Result of the written exam: candidates shortlisted for the skill test", "link": "https://example.org/results/steno-2026.pdf", "evidence": null },
+        { "kind": "cutoff", "date": "2026-11-05", "title": "Category-wise cut-off marks", "link": "https://example.org/results/steno-2026-cutoff.pdf", "evidence": null }
+      ],
+      "links": {
+        "notice_pdf": "https://example.org/notices/ex-2026-04.pdf",
+        "official_page": "https://example.org/recruitment",
+        "apply": null
+      },
+      "provenance": {
+        "version": 1,
+        "sha256": "0a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdeffedcba9876543210",
+        "retrieved_at": "2026-05-02T20:00:00+05:30",
+        "reviewed_at": "2026-05-03T12:30:00+05:30",
+        "last_checked_at": "2026-11-17T06:00:00+05:30"
+      }
+    }
+  ]
+}

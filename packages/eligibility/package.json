@@ -1,0 +1,13 @@
+{
+  "name": "@myavedan/eligibility",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Deterministic eligibility engine. Runs in the browser, the Worker and tests. No AI, no network.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@myavedan/schema": "*"
+  }
+}

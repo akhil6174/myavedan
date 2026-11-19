@@ -1,0 +1,22 @@
+---
+import Base from "../layouts/Base.astro";
+import UpdateList from "../components/UpdateList.astro";
+import { updates } from "../lib/snapshot";
+
+const items = updates(["admit_card"]);
+---
+
+<Base title="Admit cards" description="Admit card releases from official recruitment websites, each linked to the original notice.">
+  <section class="border-b border-line bg-surface">
+    <div class="wrap py-8">
+      <h1 class="text-3xl sm:text-4xl">Admit cards</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">
+        Admit card releases, newest first. Each one is linked to the recruitment it belongs to. Download your admit card only from the
+        official website.
+      </p>
+    </div>
+  </section>
+  <section class="wrap py-8">
+    <UpdateList items={items} empty="No admit cards have been released for the notices we track yet." />
+  </section>
+</Base>

@@ -1,0 +1,40 @@
+---
+const links = [
+  { href: "/explore/", label: "Explore" },
+  { href: "/admit-cards/", label: "Admit cards" },
+  { href: "/results/", label: "Results" },
+  { href: "/search/", label: "Search" },
+  { href: "/about/", label: "About" },
+];
+const path = Astro.url.pathname;
+const current = (href: string) => path === href || (href !== "/" && path.startsWith(href));
+---
+
+<header class="border-b border-line bg-surface">
+  <div class="wrap flex flex-wrap items-center gap-x-8 gap-y-2 py-3">
+    <a href="/" class="flex items-center gap-2 no-underline text-ink" aria-label="MyAvedan home">
+      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="var(--brand)"></rect>
+        <path d="M10 7h9l5 5v13a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z" fill="none" stroke="var(--on-brand)" stroke-width="2" stroke-linejoin="round"></path>
+        <path d="m12.5 18 3 3 5-6" fill="none" stroke="var(--on-brand)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+      <span class="font-display text-xl font-extrabold tracking-tight" style="font-stretch: 85%">MyAvedan</span>
+    </a>
+    <nav aria-label="Main" class="-mx-1 flex max-w-full gap-1 overflow-x-auto">
+      {
+        links.map((l) => (
+          <a
+            href={l.href}
+            aria-current={current(l.href) ? "page" : undefined}
+            class:list={[
+              "whitespace-nowrap rounded-lg px-3 py-1.5 text-[0.95rem] font-medium no-underline",
+              current(l.href) ? "bg-brand-soft text-brand-ink" : "text-ink-2 hover:bg-sunk hover:text-ink",
+            ]}
+          >
+            {l.label}
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>

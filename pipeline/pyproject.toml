@@ -1,0 +1,9 @@
+[project]
+name = "myavedan-pipeline"
+version = "0.1.0"
+description = "MyAvedan ingestion pipeline: discover, fetch, parse, extract, ground, validate."
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
