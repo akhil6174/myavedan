@@ -2,8 +2,10 @@ name = "myavedan-api"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"
 compatibility_flags = ["nodejs_compat"]
+account_id = "a6dca9a8edd3ef97196d824e8fd8dc56"
+workers_dev = false
 
-# Local development. `wrangler dev --local` creates the database in .wrangler/ — no Cloudflare account needed.
+# Local development. `wrangler dev --local` keeps the database in .wrangler/.
 [[d1_databases]]
 binding = "DB"
 database_name = "myavedan"
@@ -13,22 +15,44 @@ migrations_dir = "../../migrations"
 [vars]
 ALLOWED_ORIGINS = "http://localhost:4321"
 
-# Publish trigger: checks the publish queue every 30 minutes (M4).
 [triggers]
 crons = ["*/30 * * * *"]
 
-# ---- staging: fill database_id after `wrangler d1 create myavedan-staging` (M1) ----
+# ---------------- staging: deployed on every merge to main ----------------
 [env.staging]
 name = "myavedan-api-staging"
+workers_dev = false
+routes = [{ pattern = "api-staging.myavedan.in", custom_domain = true }]
 
 [[env.staging.d1_databases]]
 binding = "DB"
 database_name = "myavedan-staging"
-database_id = "REPLACE_AFTER_wrangler_d1_create"
+database_id = "8e0d5493-a635-45ff-a56b-7790d36ad737"
 migrations_dir = "../../migrations"
 
 [env.staging.vars]
 ALLOWED_ORIGINS = "https://staging.myavedan.in"
 
-# Secrets (set with `wrangler secret put NAME --env staging`, locally in .dev.vars):
+[env.staging.triggers]
+crons = ["*/30 * * * *"]
+
+# ---------------- production: deployed manually after staging is checked ----------------
+[env.production]
+name = "myavedan-api"
+workers_dev = false
+routes = [{ pattern = "api.myavedan.in", custom_domain = true }]
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "myavedan-prod"
+database_id = "0b59499b-d177-4103-845b-f7626229c748"
+migrations_dir = "../../migrations"
+
+[env.production.vars]
+ALLOWED_ORIGINS = "https://myavedan.in"
+
+[env.production.triggers]
+crons = ["*/30 * * * *"]
+
+# Secrets per environment: `wrangler secret put NAME --env staging|production`
 #   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT

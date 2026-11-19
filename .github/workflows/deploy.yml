@@ -1,0 +1,66 @@
+name: Deploy
+
+# Staging on every push to main. Production only when started by hand (Actions → Deploy → Run workflow).
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ github.event.inputs.environment || 'staging' }}
+    env:
+      TARGET: ${{ github.event.inputs.environment || 'staging' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Check secrets are present
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::error::Add CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Tests must pass before deploying
+        run: npm run validate:snapshot && npm test
+
+      - name: Migrate database
+        working-directory: apps/api
+        run: npx wrangler d1 migrations apply "myavedan-${{ env.TARGET == 'production' && 'prod' || 'staging' }}" --env "$TARGET" --remote
+
+      - name: Deploy API Worker
+        working-directory: apps/api
+        run: npx wrangler deploy --env "$TARGET"
+
+      - name: Build site
+        run: npm run build
+
+      - name: Deploy site to Pages
+        working-directory: apps/web
+        run: |
+          npx wrangler pages project list | grep -q "myavedan-web" || npx wrangler pages project create myavedan-web --production-branch main
+          BRANCH=$([ "$TARGET" = production ] && echo main || echo staging)
+          npx wrangler pages deploy dist --project-name myavedan-web --branch "$BRANCH" --commit-dirty=true
