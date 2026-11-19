@@ -58,9 +58,6 @@ jobs:
       - name: Build site
         run: npm run build
 
-      - name: Deploy site to Pages
+      - name: Deploy site (static assets)
         working-directory: apps/web
-        run: |
-          npx wrangler pages project list | grep -q "myavedan-web" || npx wrangler pages project create myavedan-web --production-branch main
-          BRANCH=$([ "$TARGET" = production ] && echo main || echo staging)
-          npx wrangler pages deploy dist --project-name myavedan-web --branch "$BRANCH" --commit-dirty=true
+        run: npx wrangler deploy --env "$TARGET"
