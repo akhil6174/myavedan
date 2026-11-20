@@ -1,0 +1,411 @@
+{
+  "_about": "Starter source list: national recruiters plus North India. Checked 20 Nov 2026 from the owner's network. Only official recruiting websites belong here; never aggregator sites. 'status' is the result of an automated reachability check, not a review of the content.",
+  "checked_at": "2026-11-20",
+  "sources": [
+    {
+      "id": "upsc",
+      "region": "national",
+      "organization": "Union Public Service Commission",
+      "url": "https://upsc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ssc",
+      "region": "national",
+      "organization": "Staff Selection Commission",
+      "url": "https://ssc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "employment-news",
+      "region": "national",
+      "organization": "Employment News (Govt of India weekly)",
+      "url": "https://www.employmentnews.gov.in/",
+      "status": "check_url",
+      "note": "Site is up; the home path returns 404. Find the current notices page.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rrb-chandigarh",
+      "region": "national",
+      "organization": "Railway Recruitment Board Chandigarh",
+      "url": "https://www.rrbcdg.gov.in/",
+      "status": "cert_problem",
+      "note": "Certificate chain incomplete; page loads when that is tolerated.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rrb-prayagraj",
+      "region": "national",
+      "organization": "Railway Recruitment Board Prayagraj",
+      "url": "https://www.rrbald.gov.in/",
+      "status": "tls_outdated",
+      "note": "Old TLS settings. Check in M3.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rrb-ajmer",
+      "region": "national",
+      "organization": "Railway Recruitment Board Ajmer",
+      "url": "https://www.rrbajmer.gov.in/",
+      "status": "timeout",
+      "note": "Did not answer from this network. Re-check; may be down or blocking automated visits.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rrb-jammu",
+      "region": "national",
+      "organization": "Railway Recruitment Board Jammu-Srinagar",
+      "url": "https://www.rrbjammu.nic.in/",
+      "status": "timeout",
+      "note": "Did not answer from this network. Re-check.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rrc-northern",
+      "region": "national",
+      "organization": "Railway Recruitment Cell Northern Railway",
+      "url": "https://www.rrcnr.org/",
+      "status": "blocked",
+      "note": "Refuses automated visits (403). Use the Indian Railways or RRB page instead, or check by hand.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ibps",
+      "region": "national",
+      "organization": "Institute of Banking Personnel Selection",
+      "url": "https://www.ibps.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "sbi",
+      "region": "national",
+      "organization": "State Bank of India careers",
+      "url": "https://sbi.co.in/web/careers",
+      "status": "timeout",
+      "note": "Did not answer automated check. Re-check; the site may block automated visits.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rbi",
+      "region": "national",
+      "organization": "Reserve Bank of India opportunities",
+      "url": "https://opportunities.rbi.org.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "lic",
+      "region": "national",
+      "organization": "Life Insurance Corporation careers",
+      "url": "https://licindia.in/careers",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "nta",
+      "region": "national",
+      "organization": "National Testing Agency",
+      "url": "https://nta.ac.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "army",
+      "region": "national",
+      "organization": "Indian Army recruitment",
+      "url": "https://joinindianarmy.nic.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "navy",
+      "region": "national",
+      "organization": "Indian Navy recruitment",
+      "url": "https://www.joinindiannavy.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "airforce",
+      "region": "national",
+      "organization": "Indian Air Force careers",
+      "url": "https://careerindianairforce.cdac.in/",
+      "status": "tls_outdated",
+      "note": "Old TLS settings; works when the client allows them. Check in M3.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "bsf",
+      "region": "national",
+      "organization": "Border Security Force recruitment",
+      "url": "https://rectt.bsf.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "crpf",
+      "region": "national",
+      "organization": "Central Reserve Police Force recruitment",
+      "url": "https://rect.crpf.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "cisf",
+      "region": "national",
+      "organization": "Central Industrial Security Force recruitment",
+      "url": "https://cisfrectt.cisf.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "itbp",
+      "region": "national",
+      "organization": "Indo-Tibetan Border Police recruitment",
+      "url": "https://recruitment.itbpolice.nic.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ssb",
+      "region": "national",
+      "organization": "Sashastra Seema Bal recruitment",
+      "url": "https://ssbrectt.gov.in/",
+      "status": "wrong_address",
+      "note": "Domain does not exist. Find the correct SSB recruitment address.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "kvs",
+      "region": "national",
+      "organization": "Kendriya Vidyalaya Sangathan",
+      "url": "https://kvsangathan.nic.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "nvs",
+      "region": "national",
+      "organization": "Navodaya Vidyalaya Samiti",
+      "url": "https://navodaya.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "indiapost-gds",
+      "region": "national",
+      "organization": "India Post GDS recruitment",
+      "url": "https://indiapostgdsonline.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "drdo",
+      "region": "national",
+      "organization": "Defence Research and Development Organisation",
+      "url": "https://www.drdo.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "isro",
+      "region": "national",
+      "organization": "Indian Space Research Organisation careers",
+      "url": "https://www.isro.gov.in/Careers.html",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "uppsc",
+      "region": "uttar-pradesh",
+      "organization": "UP Public Service Commission",
+      "url": "https://uppsc.up.nic.in/",
+      "status": "cert_problem",
+      "note": "Certificate chain incomplete; page loads when that is tolerated.",
+      "approved_by_owner": false
+    },
+    {
+      "id": "upsssc",
+      "region": "uttar-pradesh",
+      "organization": "UP Subordinate Services Selection Commission",
+      "url": "https://upsssc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "uppbpb",
+      "region": "uttar-pradesh",
+      "organization": "UP Police Recruitment and Promotion Board",
+      "url": "https://uppbpb.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ukpsc",
+      "region": "uttarakhand",
+      "organization": "Uttarakhand Public Service Commission",
+      "url": "https://psc.uk.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "uksssc",
+      "region": "uttarakhand",
+      "organization": "Uttarakhand Subordinate Service Selection Commission",
+      "url": "https://sssc.uk.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "hppsc",
+      "region": "himachal-pradesh",
+      "organization": "Himachal Pradesh Public Service Commission",
+      "url": "https://www.hppsc.hp.gov.in/",
+      "status": "cert_problem",
+      "note": "Certificate chain incomplete. Confirm the current address (likely hppsc.hp.gov.in).",
+      "approved_by_owner": false
+    },
+    {
+      "id": "hprca",
+      "region": "himachal-pradesh",
+      "organization": "HP Rajya Chayan Aayog",
+      "url": "https://hprca.hp.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ppsc",
+      "region": "punjab",
+      "organization": "Punjab Public Service Commission",
+      "url": "https://www.ppsc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "psssb",
+      "region": "punjab",
+      "organization": "Punjab Subordinate Services Selection Board",
+      "url": "https://sssb.punjab.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "hpsc",
+      "region": "haryana",
+      "organization": "Haryana Public Service Commission",
+      "url": "https://hpsc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "hssc",
+      "region": "haryana",
+      "organization": "Haryana Staff Selection Commission",
+      "url": "https://www.hssc.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "dsssb",
+      "region": "delhi",
+      "organization": "Delhi Subordinate Services Selection Board",
+      "url": "https://dsssb.delhi.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "chandigarh",
+      "region": "chandigarh",
+      "organization": "Chandigarh Administration recruitment",
+      "url": "https://chandigarh.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "jkpsc",
+      "region": "jammu-kashmir",
+      "organization": "J&K Public Service Commission",
+      "url": "https://jkpsc.nic.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "jkssb",
+      "region": "jammu-kashmir",
+      "organization": "J&K Services Selection Board",
+      "url": "https://jkssb.nic.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "ladakh",
+      "region": "ladakh",
+      "organization": "UT Ladakh Administration",
+      "url": "https://ladakh.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rpsc",
+      "region": "rajasthan",
+      "organization": "Rajasthan Public Service Commission",
+      "url": "https://rpsc.rajasthan.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "rssb",
+      "region": "rajasthan",
+      "organization": "Rajasthan Staff Selection Board",
+      "url": "https://rssb.rajasthan.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    },
+    {
+      "id": "raj-police",
+      "region": "rajasthan",
+      "organization": "Rajasthan Police",
+      "url": "https://police.rajasthan.gov.in/",
+      "status": "ok",
+      "note": "",
+      "approved_by_owner": false
+    }
+  ]
+}
