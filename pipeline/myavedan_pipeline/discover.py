@@ -34,6 +34,7 @@ KIND_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("admit_card", re.compile(r"admit[\s_-]*card|e-?admit|call[\s_-]*letter|hall[\s_-]*ticket", re.I)),
     ("cutoff", re.compile(r"cut[\s_-]*off", re.I)),
     ("corrigendum", re.compile(r"corrigend|addend|amendment|extension of (last )?date|date extend|revised", re.I)),
+    ("apply_link", re.compile(r"apply online|online application|online registration|new registration|click here to apply|application portal|candidate login|apply now", re.I)),
     ("notice", re.compile(r"recruit|advt|advertisement|notification|vacanc|\bcen\b|employment notice|detailed notice|engagement|applications? (are )?invited|rozgar", re.I)),
 ]
 SKIP = re.compile(r"tender|auction|quotation|rti\b|annual report|budget|circular for staff|transfer|posting order|holiday", re.I)
@@ -178,18 +179,20 @@ class State:
     path: Path
     seen_urls: dict[str, dict] = field(default_factory=dict)
     sources: dict[str, dict] = field(default_factory=dict)
+    usage: dict[str, int] = field(default_factory=dict)  # Gemini calls per IST day
 
     @classmethod
     def load(cls, path: Path) -> "State":
         if path.exists():
             data = json.loads(path.read_text(encoding="utf-8"))
-            return cls(path, data.get("seen_urls", {}), data.get("sources", {}))
+            usage = {d: n for d, n in sorted(data.get("usage", {}).items())[-30:]}  # keep a month
+            return cls(path, data.get("seen_urls", {}), data.get("sources", {}), usage)
         return cls(path)
 
     def save(self) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         tmp = self.path.with_suffix(".tmp")
-        tmp.write_text(json.dumps({"seen_urls": self.seen_urls, "sources": self.sources}, indent=1, ensure_ascii=False), encoding="utf-8")
+        tmp.write_text(json.dumps({"seen_urls": self.seen_urls, "sources": self.sources, "usage": self.usage}, indent=1, ensure_ascii=False), encoding="utf-8")
         tmp.replace(self.path)
 
 
@@ -206,6 +209,12 @@ def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) 
     sid, url = source["id"], source["url"]
     meta = state.sources.get(sid, {})
     report: dict = {"source": sid, "url": url}
+    # A site that keeps failing is tried once every 3 days instead of every run.
+    if meta.get("failures", 0) >= 4 and time.time() - meta.get("last_attempt", 0) < 3 * 86400:
+        report["result"] = f"paused after {meta['failures']} failures (retrying every 3 days)"
+        return [], report
+    meta["last_attempt"] = time.time()
+    state.sources[sid] = meta
     if not fetcher.allowed(url):
         report["result"] = "robots.txt disallows"
         return [], report
@@ -231,7 +240,8 @@ def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) 
         if not on_hosts(link, hosts):
             continue
         kind = classify(text, link)
-        if kind and link not in state.seen_urls:
+        pending = state.seen_urls.get(link, {}).get("status") == "link_pending"
+        if kind and (link not in state.seen_urls or pending):
             found.append(Candidate(sid, link, text[:200], kind))
     report.update(result="ok", links=len(links), recruitment_links=len(found), insecure_tls=page.insecure_tls)
     if len(links) < 5:

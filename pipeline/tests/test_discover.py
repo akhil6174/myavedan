@@ -37,3 +37,10 @@ def test_state_round_trip(tmp_path):
     s.save()
     again = State.load(tmp_path / "state.json")
     assert again.seen_urls["https://a.gov.in/1.pdf"]["status"] == "backlog" and again.sources["a"]["etag"] == "x"
+
+
+def test_classify_apply_links():
+    assert classify("Apply Online", "https://ibpsonline.ibps.in/crppoxvi/") == "apply_link"
+    assert classify("Click here to apply for CRP PO/MT-XVI", "/apply") == "apply_link"
+    # A notice that mentions online applications is still the notice, if its text says so first
+    assert classify("Detailed Notification CRP PO/MT-XVI", "/Detailed-Notification.pdf") == "notice"

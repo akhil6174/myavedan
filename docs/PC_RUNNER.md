@@ -68,7 +68,7 @@ So the reader can be tested here as well as through GitHub, put the key in a loc
 
 ## How it runs
 
-- **Schedule:** 09:00, 14:00 and 20:00 IST, if the runner is started then. Missed runs are simply skipped.
+- **Schedule:** 11:00 and 19:00 IST, if the runner is started then. Missed runs are simply skipped.
 - **By hand:** GitHub → **Actions → Notice reader → Run workflow**.
 - New drafts appear in the review console at https://admin-staging.myavedan.in.
 

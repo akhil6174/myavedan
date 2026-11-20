@@ -22,6 +22,7 @@ from urllib.parse import urlparse
 from . import gemini
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
 from .discover import MAX_PDF_BYTES, Candidate, Fetcher, State, scan_source
 from .fingerprint import sha256_hex
@@ -92,7 +93,7 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     org = organization_for(source, document_url)
     hosts = sorted({host(source["url"]), host(document_url)})
 
-    extraction, usage = gemini.extract(readable, model=model)
+    extraction, usage = gemini.extract(compact_pages(readable), model=model)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
     if insecure_tls:
@@ -190,6 +191,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     fetcher = Fetcher()
     now = datetime.now(IST).replace(microsecond=0).isoformat()
     todo: list[Candidate] = []
+    links_found: list[tuple[dict, Candidate]] = []
 
     for s in sources:
         hosts = sorted({host(s["url"]), *EXTRA_HOSTS.get(s["id"], [])})
@@ -202,12 +204,20 @@ def cmd_discover(args: argparse.Namespace) -> int:
             elif c.kind == "notice":
                 todo.append(c)
             else:
-                # Admit cards, keys, results, corrigenda: need linking to their recruitment (next step).
-                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "needs_linking", "first_seen": now}
+                # Apply pages, admit cards, keys, results, cut-offs, corrigenda: no AI needed.
+                # Sent in one batch below; the API suggests the matching recruitment.
+                links_found.append((s, c))
         if first_visit:
             report["first_visit_backlog"] = len(found)
         print(json.dumps({"scan": report}, ensure_ascii=False))
         sys.stdout.flush()
+        state.save()
+
+    if links_found:
+        sent = send_links(links_found, dry_run=args.dry_run)
+        for _, c in links_found:
+            state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "link_sent" if sent else "link_pending", "first_seen": now}
+        print(json.dumps({"links_found": len(links_found), "sent": sent}))
         state.save()
 
     if args.from_backlog:
@@ -215,8 +225,12 @@ def cmd_discover(args: argparse.Namespace) -> int:
                    if v.get("status") == "backlog" and v.get("kind") == "notice" and (not args.sources or v["source"] in args.sources)]
         todo += backlog[: args.from_backlog]
 
-    todo = todo[: args.max_new]
-    print(json.dumps({"to_read": len(todo)}))
+    # Daily Gemini cap, counted in IST days across runs.
+    today = datetime.now(IST).date().isoformat()
+    used = state.usage.get(today, 0)
+    allowed = max(0, int(os.environ.get("GEMINI_DAILY_LIMIT", "16")) - used)
+    todo = todo[: min(args.max_new, allowed)]
+    print(json.dumps({"to_read": len(todo), "gemini_calls_today": used, "daily_limit_left": allowed}))
     # Download one at a time (polite to each site), then read in parallel.
     downloads = []
     for c in todo:
@@ -247,9 +261,27 @@ def cmd_discover(args: argparse.Namespace) -> int:
 
 
 def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse.Namespace, now: str) -> dict:
+    day = datetime.now(IST).date().isoformat()
+    state.usage[day] = state.usage.get(day, 0) + 1  # count the attempt: failures use quota too
     result = process_bytes(got.body, c.url, source=source, document_url=got.url, dry_run=args.dry_run, model=args.model, kind=c.kind, insecure_tls=got.insecure_tls)
     state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
     return result
+
+
+def send_links(found: list[tuple[dict, Candidate]], dry_run: bool) -> bool:
+    """One signed request for every link found in this run. Returns True if the API stored them."""
+    if dry_run:
+        return False
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if not url or not secret:
+        return False
+    body = {"links": [{"source_url": s["url"], "url": c.url, "kind": c.kind, "link_text": c.text or c.url} for s, c in found][:300]}
+    try:
+        post_draft(url.rstrip("/") + "/links", secret, body)
+        return True
+    except Exception as e:  # keep them as pending; the next run sends them again
+        print(json.dumps({"links_send_failed": str(e)[:200]}))
+        return False
 
 
 def known_hashes(hashes: list[str]) -> list[str]:
