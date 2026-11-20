@@ -5,7 +5,17 @@ Where a person checks every critical fact in a notice against the official PDF b
 - Staging: https://admin-staging.myavedan.in
 - Production: https://admin.myavedan.in
 
-The console is served by the API Worker on its own hostname. The admin API answers only on that hostname, and only for a signed-in reviewer.
+The console is served by the API Worker on its own hostname. Reviewers sign in with Google (Better Auth, the same setup as TrutiAI). The admin API answers only on the console's hostname, and only for accounts with the **reviewer** or **admin** role.
+
+## Roles
+
+| Role | Can do |
+| --- | --- |
+| reader | Nothing in the console (every new Google account starts here) |
+| reviewer | Review, edit, approve and publish notices; handle error reports |
+| admin | Everything a reviewer can, plus the **Reviewers** page to give or remove access |
+
+Emails listed in the `ADMIN_EMAILS` secret become admin when they sign in. To add a reviewer: ask them to sign in once, then change their role on the **Reviewers** page. Removing access signs them out immediately.
 
 ## How reviewing works
 
@@ -25,32 +35,49 @@ The console is served by the API Worker on its own hostname. The admin API answe
 
 Every action is stored with the reviewer's email and time.
 
-## One-time setup: Cloudflare Access (account owner)
+## One-time setup: Google sign-in (account owner)
 
-Until this is done, the console page loads but the API refuses every request outside local development.
+Same steps as TrutiAI, with MyAvedan's addresses.
 
-1. Cloudflare dashboard → **Zero Trust**. The first time, choose a team name (for example `myavedan`) and the **Free** plan (up to 50 users).
-2. **Access** → **Applications** → **Add an application** → **Self-hosted**.
-   - Name: `MyAvedan review console (staging)`
-   - Domain: `admin-staging.myavedan.in`
-   - Session duration: 24 hours
-3. **Policy:** Action **Allow**, rule **Emails** → the reviewers' email addresses.
-4. Login method: **One-time PIN** (email code) works with no extra setup. Google sign-in can be added later.
-5. Save, then open the application's **Overview** and copy the **Application Audience (AUD) Tag**.
-6. Give the Worker the two values (run in the project folder):
+### 1. Google OAuth client
+1. Go to **console.cloud.google.com** → choose or create a project (for example `MyAvedan`).
+2. **APIs & Services** → **OAuth consent screen**: app name `MyAvedan`, your support email, audience **External**. Add yourself as a test user while it is in testing.
+3. **APIs & Services** → **Credentials** → **Create credentials** → **OAuth client ID** → type **Web application**, name `MyAvedan review console`.
+4. **Authorised JavaScript origins:**
+   - `https://admin-staging.myavedan.in`
+   - `https://admin.myavedan.in`
+5. **Authorised redirect URIs:**
+   - `https://admin-staging.myavedan.in/api/auth/callback/google`
+   - `https://admin.myavedan.in/api/auth/callback/google`
+6. **Create**, then copy the **Client ID** and **Client secret**.
 
-   ```
-   npx wrangler secret put ACCESS_TEAM_DOMAIN --env staging    # e.g. myavedan.cloudflareaccess.com
-   npx wrangler secret put ACCESS_AUD --env staging            # the AUD tag
-   ```
+### 2. Give the Worker its secrets (staging)
+Run each in the project folder. Each command asks you to paste the value; never put these in chat, code or GitHub.
 
-   Optional second gate, the same emails as the policy, comma-separated:
+```
+npx wrangler secret put BETTER_AUTH_SECRET --env staging    # a long random string (see below)
+npx wrangler secret put GOOGLE_CLIENT_ID --env staging
+npx wrangler secret put GOOGLE_CLIENT_SECRET --env staging
+npx wrangler secret put ADMIN_EMAILS --env staging          # your Google email; several separated by commas
+```
 
-   ```
-   npx wrangler secret put ADMIN_EMAILS --env staging
-   ```
+A random value for `BETTER_AUTH_SECRET`:
 
-Repeat with `admin.myavedan.in` and `--env production` before production launch.
+```
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### 3. Create the sign-in tables on staging
+Deploys run migrations automatically. To do it by hand:
+
+```
+npx wrangler d1 migrations apply myavedan-staging --env staging --remote
+```
+
+### 4. Sign in
+Open https://admin-staging.myavedan.in → **Continue with Google**. Your email from `ADMIN_EMAILS` becomes admin.
+
+Repeat step 2 with `--env production` before production launch (use a different `BETTER_AUTH_SECRET`).
 
 ## Local development
 
@@ -61,4 +88,16 @@ npm run dev:api          # builds the console, serves it at http://localhost:878
 npm run seed:review      # in a second terminal: two sample drafts to review
 ```
 
-`apps/api/.dev.vars` needs `ADMIN_DEV_EMAIL=you@localhost` (plus the secrets in `.env.example`). The local login only works from localhost and only when Access is not configured.
+`apps/api/.dev.vars` (never committed) needs, besides the values in `.env.example`:
+
+```
+AUTH_DEV_LOGIN=true
+ADMIN_EMAILS=admin@example.com
+BETTER_AUTH_SECRET=<any long random string>
+```
+
+Then sign in on the console with `admin@example.com` and any 8+ character password; the first sign-in creates the account. Email-and-password sign-in only exists when `AUTH_DEV_LOGIN=true`, which is never set on staging or production.
+
+## Optional: Cloudflare Access in front
+
+The Worker can also require a Cloudflare Access token (`ACCESS_TEAM_DOMAIN`, `ACCESS_AUD`) in addition to Google sign-in. It is off by default and not needed.

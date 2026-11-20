@@ -148,8 +148,9 @@ Stack versions chosen in M0: Node 24, Astro 7, Preact 10, Tailwind 4, Pagefind 1
 - [x] Changes since the live version marked; reject and send-back actions with reasons
 - [x] Approval checks every critical field and validates the record with the site's schema before anything is published
 - [x] Error reports screen
-- [x] Admin API behind Cloudflare Access (token verified in the Worker); local sign-in for development only
-- [ ] Owner: set up Cloudflare Access for `admin-staging.myavedan.in` (see `docs/REVIEW_CONSOLE.md`)
+- [x] Admin API only on the console host, only for reviewers; email sign-in for local development only
+- [x] Reviewer sign-in with Google (Better Auth, as on TrutiAI); roles reader, reviewer, admin; Reviewers page for admins
+- [ ] Owner: Google OAuth client and staging secrets (see `docs/REVIEW_CONSOLE.md`)
 - [ ] Publish step: Worker cron batches the publish queue and dispatches a site build from the approved snapshot
 - **Done when:** a reviewer approves a notice and it is live on staging within one publish cycle.
 

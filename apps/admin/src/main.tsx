@@ -1,34 +1,50 @@
 import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 import "./styles.css";
-import { api, ApiError } from "./api";
+import { api, ApiError, signIn, type Role } from "./api";
 import { Queue } from "./Queue";
 import { Review } from "./Review";
 import { Corrections } from "./Corrections";
+import { Reviewers } from "./Reviewers";
+import { SignIn } from "./SignIn";
 
-type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" };
+type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" } | { name: "reviewers" };
 
 function parse(hash: string): Route {
   const m = hash.match(/^#\/review\/([\w-]+)/);
   if (m) return { name: "review", id: m[1]! };
   if (hash.startsWith("#/corrections")) return { name: "corrections" };
+  if (hash.startsWith("#/reviewers")) return { name: "reviewers" };
   return { name: "queue" };
 }
 
+type Who = { state: "loading" } | { state: "signed-out" } | { state: "not-reviewer"; message: string } | { state: "in"; email: string; role: Role } | { state: "down"; message: string };
+
 function App() {
   const [route, setRoute] = useState<Route>(parse(location.hash));
-  const [me, setMe] = useState<string | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
+  const [who, setWho] = useState<Who>({ state: "loading" });
+
+  const check = () =>
+    api
+      .me()
+      .then((r) => setWho({ state: "in", email: r.email, role: r.role }))
+      .catch((e) => {
+        if (e instanceof ApiError && e.status === 401) setWho({ state: "signed-out" });
+        else if (e instanceof ApiError && e.status === 403) setWho({ state: "not-reviewer", message: e.message });
+        else setWho({ state: "down", message: "Could not reach the API. Check your connection and reload." });
+      });
 
   useEffect(() => {
     const on = () => setRoute(parse(location.hash));
     addEventListener("hashchange", on);
-    api
-      .me()
-      .then((r) => setMe(r.email))
-      .catch((e) => setAuthError(e instanceof ApiError ? e.message : "Could not reach the API."));
+    void check();
     return () => removeEventListener("hashchange", on);
   }, []);
+
+  async function signOut() {
+    await signIn.signOut().catch(() => undefined);
+    setWho({ state: "signed-out" });
+  }
 
   const nav = (href: string, label: string, active: boolean) => (
     <a
@@ -50,27 +66,35 @@ function App() {
               MyAvedan <span class="font-sans text-sm font-medium text-ink-3">review console</span>
             </span>
           </a>
-          <nav class="flex gap-1" aria-label="Console">
-            {nav("#/queue", "Queue", route.name !== "corrections")}
-            {nav("#/corrections", "Error reports", route.name === "corrections")}
-          </nav>
-          <span class="ml-auto text-xs text-ink-3">{me ? `Signed in as ${me}` : ""}</span>
+          {who.state === "in" && (
+            <nav class="flex gap-1" aria-label="Console">
+              {nav("#/queue", "Queue", route.name === "queue" || route.name === "review")}
+              {nav("#/corrections", "Error reports", route.name === "corrections")}
+              {who.role === "admin" && nav("#/reviewers", "Reviewers", route.name === "reviewers")}
+            </nav>
+          )}
+          {who.state === "in" && (
+            <span class="ml-auto flex items-center gap-3 text-xs text-ink-3">
+              {who.email} · {who.role}
+              <button type="button" class="btn btn-sm" onClick={signOut}>
+                Sign out
+              </button>
+            </span>
+          )}
         </div>
       </header>
-      {authError ? (
-        <main class="mx-auto max-w-2xl px-4 py-12">
-          <h1 class="text-2xl">You are not signed in</h1>
-          <p class="mt-2 text-ink-2">{authError}</p>
-          <p class="mt-2 text-sm text-ink-3">
-            The review console is only available to reviewers through Cloudflare Access. Reload the page to sign in again.
-          </p>
-        </main>
-      ) : !me ? (
+      {who.state === "loading" ? (
         <p class="px-4 py-12 text-center text-ink-3">Loading…</p>
+      ) : who.state === "down" ? (
+        <p class="notice notice-warn mx-auto mt-10 max-w-xl">{who.message}</p>
+      ) : who.state === "signed-out" || who.state === "not-reviewer" ? (
+        <SignIn notReviewer={who.state === "not-reviewer" ? who.message : null} onSignedIn={() => void check()} />
       ) : route.name === "review" ? (
         <Review id={route.id} />
       ) : route.name === "corrections" ? (
         <Corrections />
+      ) : route.name === "reviewers" && who.role === "admin" ? (
+        <Reviewers me={who.email} />
       ) : (
         <Queue />
       )}

@@ -1,12 +1,12 @@
 /**
  * Who is calling an admin route.
  *
- * In staging and production the admin host sits behind Cloudflare Access, which signs in the
- * reviewer and adds a signed JWT (Cf-Access-Jwt-Assertion) to every request. We verify that
- * token ourselves: issuer, audience, expiry and RS256 signature against Access's public keys.
- * Locally, ADMIN_DEV_EMAIL allows access from localhost only.
+ * Reviewers sign in with Google (Better Auth, see auth.ts) and need the reviewer or admin role.
+ * Optionally, Cloudflare Access can also sit in front of the admin host; when ACCESS_TEAM_DOMAIN and
+ * ACCESS_AUD are set, its signed JWT (Cf-Access-Jwt-Assertion) is verified here as well.
  */
 import type { Env } from "./env";
+import { currentUser, hasRole, type Role } from "./auth";
 
 export interface Reviewer {
   email: string;
@@ -91,22 +91,24 @@ export async function verifyAccessJwt(
   return ok && claims.email ? claims.email.toLowerCase() : null;
 }
 
-function isLocal(request: Request): boolean {
-  const host = new URL(request.url).hostname;
-  return host === "localhost" || host === "127.0.0.1";
-}
+export type ReviewerCheck =
+  | { ok: true; reviewer: Reviewer & { role: Role } }
+  | { ok: false; status: 401 | 403; message: string };
 
-export async function reviewerFor(request: Request, env: Env): Promise<Reviewer | null> {
-  let email: string | null = null;
+/**
+ * Who may use the review console. Default: Google sign-in with the reviewer or admin role (as on TrutiAI).
+ * If Cloudflare Access is ever put in front, its token must also be valid.
+ */
+export async function reviewerFor(request: Request, env: Env): Promise<ReviewerCheck> {
   if (env.ACCESS_TEAM_DOMAIN && env.ACCESS_AUD) {
     const token = request.headers.get("Cf-Access-Jwt-Assertion");
-    if (token) email = await verifyAccessJwt(token, env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD);
-  } else if (env.ADMIN_DEV_EMAIL && isLocal(request)) {
-    email = env.ADMIN_DEV_EMAIL.toLowerCase();
+    const email = token ? await verifyAccessJwt(token, env.ACCESS_TEAM_DOMAIN, env.ACCESS_AUD) : null;
+    if (!email) return { ok: false, status: 401, message: "Cloudflare Access sign-in required" };
   }
-  if (!email) return null;
-  // Optional second gate: an explicit list of reviewer emails.
-  const allowed = (env.ADMIN_EMAILS ?? "").split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
-  if (allowed.length && !allowed.includes(email)) return null;
-  return { email };
+  const user = await currentUser(request, env);
+  if (!user) return { ok: false, status: 401, message: "sign in to use the review console" };
+  if (!hasRole(user, "reviewer")) {
+    return { ok: false, status: 403, message: `${user.email} is not a reviewer yet. Ask an admin to give you the reviewer role.` };
+  }
+  return { ok: true, reviewer: { email: user.email, role: user.role } };
 }

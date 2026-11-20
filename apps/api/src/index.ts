@@ -7,12 +7,15 @@
  *   POST /api/corrections  "Report an error" from the public site (CORS, rate-limited)
  *   GET  /api/snapshot     approved records for the site build (bearer token)
  *
- * Review console (admin host only, behind Cloudflare Access): /api/admin/* (see admin.ts),
- * plus the console's own files from apps/admin/dist.
+ * Review console (admin host only):
+ *   /api/auth/*            Better Auth: Google sign-in, sessions, sign-out
+ *   /api/admin/*           review routes for signed-in reviewers (see admin.ts)
+ *   everything else        the console's own files from apps/admin/dist
  */
 import type { Env } from "./env";
 import { reviewerFor } from "./access";
-import { bulkApprove, corrections, decision, fieldDecision, queue, updateCorrection, version } from "./admin";
+import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
+import { bulkApprove, corrections, decision, fieldDecision, queue, setRole, updateCorrection, users, version } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, snapshot } from "./routes";
 
@@ -22,18 +25,31 @@ function isAdminHost(request: Request, env: Env): boolean {
 }
 
 async function admin(request: Request, env: Env, path: string): Promise<Response> {
-  if (!isAdminHost(request, env)) return problem(404, "not found");
-  const reviewer = await reviewerFor(request, env);
-  if (!reviewer) return problem(401, "sign in through Cloudflare Access to use the review console");
   const method = request.method;
   const url = new URL(request.url);
 
-  if (path === "/api/admin/me" && method === "GET") return json({ email: reviewer.email });
+  // Public to the console: how sign-in works here.
+  if (path === "/api/admin/sign-in-options" && method === "GET") {
+    return json({ configured: isAuthConfigured(env), google: isGoogleConfigured(env), dev: isDevLogin(env) });
+  }
+
+  const check = await reviewerFor(request, env);
+  if (!check.ok) return problem(check.status, check.message, { signed_in: check.status === 403 });
+  const reviewer = check.reviewer;
+
+  if (path === "/api/admin/me" && method === "GET") return json({ email: reviewer.email, role: reviewer.role });
   if (path === "/api/admin/queue" && method === "GET") return queue(env);
   if (path === "/api/admin/corrections" && method === "GET") return corrections(env, url.searchParams.get("status"));
 
   let m = path.match(/^\/api\/admin\/corrections\/([\w-]+)$/);
   if (m && method === "POST") return updateCorrection(request, env, m[1]!);
+
+  if (path === "/api/admin/users" || path.startsWith("/api/admin/users/")) {
+    if (reviewer.role !== "admin") return problem(403, "only admins manage reviewers");
+    if (path === "/api/admin/users" && method === "GET") return users(env);
+    m = path.match(/^\/api\/admin\/users\/([\w-]+)\/role$/);
+    if (m && method === "POST") return setRole(request, env, m[1]!, reviewer);
+  }
 
   m = path.match(/^\/api\/admin\/versions\/([\w-]+)(?:\/(fields|bulk|decision))?$/);
   if (m) {
@@ -52,7 +68,15 @@ export default {
     const method = request.method;
 
     try {
-      if (pathname.startsWith("/api/admin/")) return await admin(request, env, pathname);
+      if (pathname.startsWith("/api/auth/")) {
+        if (!isAdminHost(request, env)) return problem(404, "not found");
+        if (!isAuthConfigured(env)) return problem(503, "sign-in is not configured");
+        return await auth(env).handler(request);
+      }
+      if (pathname.startsWith("/api/admin/")) {
+        if (!isAdminHost(request, env)) return problem(404, "not found");
+        return await admin(request, env, pathname);
+      }
       if (pathname === "/api/health" && method === "GET") return await health(env);
       if (pathname === "/api/ingest" && method === "POST") return await ingest(request, env);
       if (pathname === "/api/snapshot" && method === "GET") return await snapshot(request, env);

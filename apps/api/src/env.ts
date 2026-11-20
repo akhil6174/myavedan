@@ -12,12 +12,20 @@ export interface Env {
   PUBLISH_TOKEN?: string;
   /** Salt for hashing client IPs used only for abuse limits. */
   IP_HASH_SALT?: string;
-  /** Cloudflare Access team domain, e.g. myavedan.cloudflareaccess.com. */
-  ACCESS_TEAM_DOMAIN?: string;
-  /** Cloudflare Access application audience tag. */
-  ACCESS_AUD?: string;
-  /** Optional comma-separated reviewer emails allowed in addition to the Access policy. */
+
+  // ---- sign-in (Better Auth, as on TrutiAI) ----
+  /** Public URL of the review console, e.g. https://admin-staging.myavedan.in. */
+  AUTH_URL?: string;
+  /** Random secret that signs sessions. Required outside local development. */
+  BETTER_AUTH_SECRET?: string;
+  GOOGLE_CLIENT_ID?: string;
+  GOOGLE_CLIENT_SECRET?: string;
+  /** Comma-separated emails that become admin when they sign in. */
   ADMIN_EMAILS?: string;
-  /** Local development only: reviewer email accepted from localhost when Access is not configured. */
-  ADMIN_DEV_EMAIL?: string;
+  /** "true" only in local development: allows email + password sign-in. */
+  AUTH_DEV_LOGIN?: string;
+
+  // ---- optional: Cloudflare Access in front of the console (not used by default) ----
+  ACCESS_TEAM_DOMAIN?: string;
+  ACCESS_AUD?: string;
 }
