@@ -10,7 +10,8 @@
       "sha256": "ca818d92ae5254950bfbb51e1c33904bd3514460765f5e234528640aa16f6ee4",
       "bytes": 1577201,
       "collected_on": "2026-11-20",
-      "direct_pdf_link": true
+      "direct_pdf_link": true,
+      "source_id": "rrb-apply"
     },
     {
       "folder": "ssc",
@@ -21,7 +22,8 @@
       "sha256": "7cd76e377ba0b4b909d32b0c7c731724dafd32d5cbd8af63a9fb5b0a6a60bf15",
       "bytes": 2370281,
       "collected_on": "2026-11-20",
-      "direct_pdf_link": true
+      "direct_pdf_link": true,
+      "source_id": "ssc"
     },
     {
       "folder": "ibps",
@@ -32,7 +34,8 @@
       "sha256": "9379acfcad5750585ead182b5b0660fde89b324a8a2fa79dce9a9a9e69f73ebe",
       "bytes": 985571,
       "collected_on": "2026-11-20",
-      "direct_pdf_link": true
+      "direct_pdf_link": true,
+      "source_id": "ibps"
     },
     {
       "folder": "sbi",
@@ -43,7 +46,8 @@
       "sha256": "9df3851a6cc5daf6f9f0180088b4967de6c307ef821b3fc78f38c41bc6dc43e2",
       "bytes": 1289951,
       "collected_on": "2026-11-20",
-      "direct_pdf_link": false
+      "direct_pdf_link": false,
+      "source_id": "sbi"
     },
     {
       "folder": "uppsc",
@@ -54,7 +58,8 @@
       "sha256": "406428974ccb8420b59170e78b72e226ce9d22a6b6c137777c80178427a39ab3",
       "bytes": 2724681,
       "collected_on": "2026-11-20",
-      "direct_pdf_link": false
+      "direct_pdf_link": false,
+      "source_id": "uppsc"
     }
   ]
 }

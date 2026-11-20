@@ -1,0 +1,53 @@
+name: Notice reader
+
+# Runs on the owner's PC in India (self-hosted runner labelled "india"), because many government
+# sites don't answer GitHub's US servers. See docs/PC_RUNNER.md.
+#
+# Safety: this workflow never runs for pull requests. Only the owner can start it (Run workflow).
+# The schedule is added once automatic discovery of new notices exists.
+on:
+  workflow_dispatch:
+    inputs:
+      notices:
+        description: Test notices to read (space-separated folders), or "all"
+        default: all
+      dry_run:
+        description: Save results only, don't send to the review console
+        type: boolean
+        default: false
+
+concurrency:
+  group: notice-reader
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    if: github.repository == 'akhil6174/myavedan'
+    runs-on: [self-hosted, india]
+    timeout-minutes: 60
+    env:
+      PYTHONUTF8: "1"
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      INGEST_URL: https://api-staging.myavedan.in/api/ingest
+      INGEST_HMAC_SECRET: ${{ secrets.STAGING_INGEST_SECRET }}
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install reader packages
+        run: python -m pip install --quiet --disable-pip-version-check -r pipeline/requirements.txt
+
+      - name: Read notices
+        working-directory: pipeline
+        run: |
+          $cliArgs = @("golden")
+          if ("${{ github.event.inputs.notices }}" -ne "all" -and "${{ github.event.inputs.notices }}" -ne "") {
+            $cliArgs += "--only"; $cliArgs += ("${{ github.event.inputs.notices }}" -split " ")
+          }
+          if ("${{ github.event.inputs.dry_run }}" -eq "true") { $cliArgs += "--dry-run" }
+          python -m myavedan_pipeline.cli @cliArgs
