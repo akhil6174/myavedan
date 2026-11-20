@@ -1,0 +1,27 @@
+name: Source reachability
+
+# Checks which official sources answer from GitHub's servers (US). Run by hand, or on pushes that change the source list.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - pipeline/sources/**
+      - pipeline/scripts/probe_sources.py
+      - .github/workflows/source-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Where this runner is
+        run: curl -s --max-time 10 https://ipinfo.io/country || echo unknown
+      - name: Probe sources
+        run: python pipeline/scripts/probe_sources.py pipeline/sources/national-north.json pipeline/golden/notices.json

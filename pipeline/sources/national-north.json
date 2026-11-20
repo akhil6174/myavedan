@@ -1,5 +1,5 @@
 {
-  "_about": "Starter source list: national recruiters plus North India. Checked 20 Nov 2026 from the owner's network. Only official recruiting websites belong here; never aggregator sites. 'status' is the result of an automated reachability check, not a review of the content.",
+  "_about": "Starter source list: national recruiters plus North India. Checked 20 Nov 2026 from the owner's network; approved by the owner on 20 Nov 2026. Only official recruiting websites belong here; never aggregator sites. 'status' is the result of an automated reachability check, not a review of the content.",
   "checked_at": "2026-11-20",
   "sources": [
     {
@@ -9,7 +9,7 @@
       "url": "https://upsc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "ssc",
@@ -18,7 +18,7 @@
       "url": "https://ssc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "employment-news",
@@ -27,7 +27,7 @@
       "url": "https://www.employmentnews.gov.in/",
       "status": "check_url",
       "note": "Site is up; the home path returns 404. Find the current notices page.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rrb-chandigarh",
@@ -36,7 +36,7 @@
       "url": "https://www.rrbcdg.gov.in/",
       "status": "cert_problem",
       "note": "Certificate chain incomplete; page loads when that is tolerated.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rrb-prayagraj",
@@ -45,7 +45,7 @@
       "url": "https://www.rrbald.gov.in/",
       "status": "tls_outdated",
       "note": "Old TLS settings. Check in M3.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rrb-ajmer",
@@ -54,7 +54,7 @@
       "url": "https://www.rrbajmer.gov.in/",
       "status": "timeout",
       "note": "Did not answer from this network. Re-check; may be down or blocking automated visits.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rrb-jammu",
@@ -63,7 +63,7 @@
       "url": "https://www.rrbjammu.nic.in/",
       "status": "timeout",
       "note": "Did not answer from this network. Re-check.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rrc-northern",
@@ -72,7 +72,16 @@
       "url": "https://www.rrcnr.org/",
       "status": "blocked",
       "note": "Refuses automated visits (403). Use the Indian Railways or RRB page instead, or check by hand.",
-      "approved_by_owner": false
+      "approved_by_owner": true
+    },
+    {
+      "id": "rrb-apply",
+      "region": "national",
+      "organization": "Railway Recruitment Boards (central applications site)",
+      "url": "https://www.rrbapply.gov.in/",
+      "status": "ok",
+      "note": "Railway CEN notices are published here (seen 20 Nov 2026).",
+      "approved_by_owner": true
     },
     {
       "id": "ibps",
@@ -81,16 +90,16 @@
       "url": "https://www.ibps.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "sbi",
       "region": "national",
       "organization": "State Bank of India careers",
-      "url": "https://sbi.co.in/web/careers",
-      "status": "timeout",
-      "note": "Did not answer automated check. Re-check; the site may block automated visits.",
-      "approved_by_owner": false
+      "url": "https://sbi.bank.in/web/careers/current-openings",
+      "status": "ok",
+      "note": "SBI moved to sbi.bank.in (seen 20 Nov 2026 on the owner's download).",
+      "approved_by_owner": true
     },
     {
       "id": "rbi",
@@ -99,7 +108,7 @@
       "url": "https://opportunities.rbi.org.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "lic",
@@ -108,7 +117,7 @@
       "url": "https://licindia.in/careers",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "nta",
@@ -117,7 +126,7 @@
       "url": "https://nta.ac.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "army",
@@ -126,7 +135,7 @@
       "url": "https://joinindianarmy.nic.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "navy",
@@ -135,7 +144,7 @@
       "url": "https://www.joinindiannavy.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "airforce",
@@ -144,7 +153,7 @@
       "url": "https://careerindianairforce.cdac.in/",
       "status": "tls_outdated",
       "note": "Old TLS settings; works when the client allows them. Check in M3.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "bsf",
@@ -153,7 +162,7 @@
       "url": "https://rectt.bsf.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "crpf",
@@ -162,7 +171,7 @@
       "url": "https://rect.crpf.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "cisf",
@@ -171,7 +180,7 @@
       "url": "https://cisfrectt.cisf.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "itbp",
@@ -180,7 +189,7 @@
       "url": "https://recruitment.itbpolice.nic.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "ssb",
@@ -189,7 +198,7 @@
       "url": "https://ssbrectt.gov.in/",
       "status": "wrong_address",
       "note": "Domain does not exist. Find the correct SSB recruitment address.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "kvs",
@@ -198,7 +207,7 @@
       "url": "https://kvsangathan.nic.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "nvs",
@@ -207,7 +216,7 @@
       "url": "https://navodaya.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "indiapost-gds",
@@ -216,7 +225,7 @@
       "url": "https://indiapostgdsonline.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "drdo",
@@ -225,7 +234,7 @@
       "url": "https://www.drdo.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "isro",
@@ -234,7 +243,7 @@
       "url": "https://www.isro.gov.in/Careers.html",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "uppsc",
@@ -243,7 +252,7 @@
       "url": "https://uppsc.up.nic.in/",
       "status": "cert_problem",
       "note": "Certificate chain incomplete; page loads when that is tolerated.",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "upsssc",
@@ -252,7 +261,7 @@
       "url": "https://upsssc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "uppbpb",
@@ -261,7 +270,7 @@
       "url": "https://uppbpb.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "ukpsc",
@@ -270,7 +279,7 @@
       "url": "https://psc.uk.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "uksssc",
@@ -279,7 +288,7 @@
       "url": "https://sssc.uk.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "hppsc",
@@ -288,7 +297,7 @@
       "url": "https://www.hppsc.hp.gov.in/",
       "status": "cert_problem",
       "note": "Certificate chain incomplete. Confirm the current address (likely hppsc.hp.gov.in).",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "hprca",
@@ -297,7 +306,7 @@
       "url": "https://hprca.hp.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "ppsc",
@@ -306,7 +315,7 @@
       "url": "https://www.ppsc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "psssb",
@@ -315,7 +324,7 @@
       "url": "https://sssb.punjab.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "hpsc",
@@ -324,7 +333,7 @@
       "url": "https://hpsc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "hssc",
@@ -333,7 +342,7 @@
       "url": "https://www.hssc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "dsssb",
@@ -342,7 +351,7 @@
       "url": "https://dsssb.delhi.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "chandigarh",
@@ -351,7 +360,7 @@
       "url": "https://chandigarh.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "jkpsc",
@@ -360,7 +369,7 @@
       "url": "https://jkpsc.nic.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "jkssb",
@@ -369,7 +378,7 @@
       "url": "https://jkssb.nic.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "ladakh",
@@ -378,7 +387,7 @@
       "url": "https://ladakh.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rpsc",
@@ -387,7 +396,7 @@
       "url": "https://rpsc.rajasthan.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "rssb",
@@ -396,7 +405,7 @@
       "url": "https://rssb.rajasthan.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     },
     {
       "id": "raj-police",
@@ -405,7 +414,7 @@
       "url": "https://police.rajasthan.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": false
+      "approved_by_owner": true
     }
   ]
 }
