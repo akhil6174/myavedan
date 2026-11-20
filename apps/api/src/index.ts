@@ -4,6 +4,8 @@
  * Public and pipeline routes:
  *   GET  /api/health       database reachability
  *   POST /api/ingest       pipeline drafts → D1 (HMAC-signed; the only write path from the pipeline)
+ *   POST /api/ingest/known which file fingerprints are already stored (HMAC-signed)
+ *   POST /api/ingest/links official links (apply, admit card, key, result…) found by the reader (HMAC-signed)
  *   POST /api/corrections  "Report an error" from the public site (CORS, rate-limited)
  *   GET  /api/snapshot     approved records for the site build (bearer token)
  *   POST /api/publish/complete  the Publish workflow reports a finished deploy (bearer token)
@@ -18,8 +20,9 @@ import { reviewerFor } from "./access";
 import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
 import { bulkApprove, corrections, decision, fieldDecision, queue, setRole, updateCorrection, users, version } from "./admin";
 import { corsHeaders, json, problem } from "./http";
-import { correction, health, ingest, snapshot } from "./routes";
+import { correction, health, ingest, knownHashes, snapshot } from "./routes";
 import { publishComplete, publishStatus, runPublishTrigger } from "./publish";
+import { decideLink, listLinks, listOpportunities, receiveLinks } from "./links";
 
 function isAdminHost(request: Request, env: Env): boolean {
   const host = new URL(request.url).hostname;
@@ -52,6 +55,11 @@ async function admin(request: Request, env: Env, ctx: ExecutionContext, path: st
     m = path.match(/^\/api\/admin\/users\/([\w-]+)\/role$/);
     if (m && method === "POST") return setRole(request, env, m[1]!, reviewer);
   }
+
+  if (path === "/api/admin/links" && method === "GET") return listLinks(env);
+  if (path === "/api/admin/opportunities" && method === "GET") return listOpportunities(env);
+  m = path.match(/^\/api\/admin\/links\/([\w-]+)$/);
+  if (m && method === "POST") return decideLink(request, env, m[1]!, reviewer);
 
   if (path === "/api/admin/publish" && method === "GET") return publishStatus(env);
   if (path === "/api/admin/publish" && method === "POST") return json(await runPublishTrigger(env, { force: true }));
@@ -89,6 +97,8 @@ export default {
       }
       if (pathname === "/api/health" && method === "GET") return await health(env);
       if (pathname === "/api/ingest" && method === "POST") return await ingest(request, env);
+      if (pathname === "/api/ingest/known" && method === "POST") return await knownHashes(request, env);
+      if (pathname === "/api/ingest/links" && method === "POST") return await receiveLinks(request, env);
       if (pathname === "/api/snapshot" && method === "GET") return await snapshot(request, env);
       if (pathname === "/api/publish/complete" && method === "POST") return await publishComplete(request, env);
       if (pathname === "/api/corrections") {

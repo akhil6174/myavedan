@@ -6,15 +6,17 @@ import { Queue } from "./Queue";
 import { Review } from "./Review";
 import { Corrections } from "./Corrections";
 import { Reviewers } from "./Reviewers";
+import { Links } from "./Links";
 import { SignIn } from "./SignIn";
 
-type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" } | { name: "reviewers" };
+type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" } | { name: "reviewers" } | { name: "links" };
 
 function parse(hash: string): Route {
   const m = hash.match(/^#\/review\/([\w-]+)/);
   if (m) return { name: "review", id: m[1]! };
   if (hash.startsWith("#/corrections")) return { name: "corrections" };
   if (hash.startsWith("#/reviewers")) return { name: "reviewers" };
+  if (hash.startsWith("#/links")) return { name: "links" };
   return { name: "queue" };
 }
 
@@ -69,6 +71,7 @@ function App() {
           {who.state === "in" && (
             <nav class="flex gap-1" aria-label="Console">
               {nav("#/queue", "Queue", route.name === "queue" || route.name === "review")}
+              {nav("#/links", "Official links", route.name === "links")}
               {nav("#/corrections", "Error reports", route.name === "corrections")}
               {who.role === "admin" && nav("#/reviewers", "Reviewers", route.name === "reviewers")}
             </nav>
@@ -91,6 +94,8 @@ function App() {
         <SignIn notReviewer={who.state === "not-reviewer" ? who.message : null} onSignedIn={() => void check()} />
       ) : route.name === "review" ? (
         <Review id={route.id} />
+      ) : route.name === "links" ? (
+        <Links />
       ) : route.name === "corrections" ? (
         <Corrections />
       ) : route.name === "reviewers" && who.role === "admin" ? (

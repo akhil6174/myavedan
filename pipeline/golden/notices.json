@@ -1,0 +1,65 @@
+{
+  "_about": "Test notices collected by the owner. Expected answers (expected.json per folder) are added after hand-checking.",
+  "notices": [
+    {
+      "folder": "rrb",
+      "file": "CEN_08_2026_StationMaster.pdf",
+      "organization": "Railway Recruitment Boards, CEN 08/2026 Station Master",
+      "source_url": "https://www.rrbapply.gov.in/assets/forms/CEN_08_2026_StationMaster.pdf",
+      "official_host": "rrbapply.gov.in",
+      "sha256": "ca818d92ae5254950bfbb51e1c33904bd3514460765f5e234528640aa16f6ee4",
+      "bytes": 1577201,
+      "collected_on": "2026-11-20",
+      "direct_pdf_link": true,
+      "source_id": "rrb-apply"
+    },
+    {
+      "folder": "ssc",
+      "file": "Notice_of_STENO-LDC_2026.pdf",
+      "organization": "Staff Selection Commission, Steno/LDC 2026",
+      "source_url": "https://ssc.gov.in/api/attachment/uploads/masterData/NoticeBoards/Notice_of_STENO-LDC_2026.pdf",
+      "official_host": "ssc.gov.in",
+      "sha256": "7cd76e377ba0b4b909d32b0c7c731724dafd32d5cbd8af63a9fb5b0a6a60bf15",
+      "bytes": 2370281,
+      "collected_on": "2026-11-20",
+      "direct_pdf_link": true,
+      "source_id": "ssc"
+    },
+    {
+      "folder": "ibps",
+      "file": "Detailed-Notification_CRP-PO-XVI_Final_V1_30.06.2026.pdf",
+      "organization": "IBPS, CRP PO/MT-XVI",
+      "source_url": "https://www.ibps.in/wp-content/uploads/Detailed-Notification_CRP-PO-XVI_Final_V1_30.06.2026.pdf",
+      "official_host": "ibps.in",
+      "sha256": "9379acfcad5750585ead182b5b0660fde89b324a8a2fa79dce9a9a9e69f73ebe",
+      "bytes": 985571,
+      "collected_on": "2026-11-20",
+      "direct_pdf_link": true,
+      "source_id": "ibps"
+    },
+    {
+      "folder": "sbi",
+      "file": "19112026_Detailed Adv.-SCO-36.pdf",
+      "organization": "State Bank of India, SCO advertisement",
+      "source_url": "https://sbi.bank.in/web/careers/current-openings",
+      "official_host": "sbi.bank.in",
+      "sha256": "9df3851a6cc5daf6f9f0180088b4967de6c307ef821b3fc78f38c41bc6dc43e2",
+      "bytes": 1289951,
+      "collected_on": "2026-11-20",
+      "direct_pdf_link": false,
+      "source_id": "sbi"
+    },
+    {
+      "folder": "uppsc",
+      "file": "View_Enclosure.pdf",
+      "organization": "UP Public Service Commission, advertisement ID 307",
+      "source_url": "https://uppsc.up.nic.in/OuterPages/View_Advertisement.aspx?ID=307&flag=E",
+      "official_host": "uppsc.up.nic.in",
+      "sha256": "406428974ccb8420b59170e78b72e226ce9d22a6b6c137777c80178427a39ab3",
+      "bytes": 2724681,
+      "collected_on": "2026-11-20",
+      "direct_pdf_link": false,
+      "source_id": "uppsc"
+    }
+  ]
+}

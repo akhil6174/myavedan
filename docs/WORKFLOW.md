@@ -134,6 +134,9 @@ Stack versions chosen in M0: Node 24, Astro 7, Preact 10, Tailwind 4, Pagefind 1
 - **Done when:** `pipeline/golden/` has 25 labelled notices and the labelling time is known.
 
 ### M3 · Ingestion pipeline (weeks 4–8)
+- [x] Reachability tested: many sources block non-Indian servers, so the reader runs on a runner in India (docs/PC_RUNNER.md)
+- [x] Parse (PyMuPDF, tables), OCR fallback, Gemini extraction with page + quote per fact, grounding, validation, signed send to staging
+- [x] 46 approved sources registered on staging; first 5 real test notices in pipeline/golden
 - [ ] Discover (conditional GET, robots.txt, per-host delay) and fetch with SHA-256 dedupe into R2
 - [ ] Classify and link documents to opportunities
 - [ ] Parse with PyMuPDF; OCR (Hindi + English) only for pages without a text layer

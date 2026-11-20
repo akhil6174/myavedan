@@ -102,6 +102,16 @@ export interface Correction {
 
 export type Role = "reader" | "reviewer" | "admin";
 
+export interface FoundLink {
+  id: string;
+  url: string;
+  kind: "apply_link" | "corrigendum" | "admit_card" | "answer_key" | "result" | "cutoff";
+  link_text: string;
+  found_at: string;
+  organization: string | null;
+  suggestions: { id: string; slug: string; title: string; score: number; why: string }[];
+}
+
 export interface UserRow {
   id: string;
   name: string;
@@ -143,6 +153,11 @@ export const api = {
       batches: { id: string; requested_at: string; dispatched_at: string | null; deployed_at: string | null; urgent: number; versions: number }[];
     }>("/publish"),
   publishNow: () => call<{ dispatched: boolean; reason: string; versions?: number }>("/publish", { method: "POST" }),
+  links: () => call<{ items: FoundLink[] }>("/links"),
+  opportunities: () => call<{ items: { id: string; slug: string; title: string; advt_no: string | null; organization: string | null }[] }>("/opportunities"),
+  attachLink: (id: string, body: { opportunity_id: string; title?: string; date?: string }) =>
+    call<{ ok: true; opportunity: string }>(`/links/${id}`, { method: "POST", body: { action: "attach", ...body } }),
+  dismissLink: (id: string) => call<{ ok: true }>(`/links/${id}`, { method: "POST", body: { action: "dismiss" } }),
   users: () => call<{ items: UserRow[] }>("/users"),
   setRole: (id: string, role: Role) => call<{ ok: true }>(`/users/${id}/role`, { method: "POST", body: { role } }),
   queue: () => call<{ items: QueueItem[]; open_corrections: number }>("/queue"),

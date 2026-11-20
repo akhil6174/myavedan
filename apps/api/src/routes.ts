@@ -125,6 +125,29 @@ export async function ingest(request: Request, env: Env): Promise<Response> {
   return json({ status: state, document_id: doc.id, document_version_id: versionId, version_no: versionNo }, 201);
 }
 
+/** Which of these file fingerprints are already stored? Lets the reader skip AI work on files it already sent. */
+export async function knownHashes(request: Request, env: Env): Promise<Response> {
+  if (!env.INGEST_HMAC_SECRET) return problem(503, "ingest is not configured");
+  const raw = await readBody(request, 64 * 1024);
+  if (raw === null) return problem(413, "body too large");
+  const check = await verifySignature(env.INGEST_HMAC_SECRET, raw, request.headers.get(TIMESTAMP_HEADER), request.headers.get(SIGNATURE_HEADER));
+  if (!check.ok) return problem(401, check.reason);
+  const parsed = z.object({ sha256: z.array(z.string().regex(/^[a-f0-9]{64}$/)).max(500) }).safeParse(JSON.parse(raw));
+  if (!parsed.success) return problem(422, "invalid request");
+  const hashes = parsed.data.sha256;
+  if (hashes.length === 0) return json({ known: [] });
+  const known: string[] = [];
+  // D1 allows at most 100 bound values per statement.
+  for (let i = 0; i < hashes.length; i += 90) {
+    const part = hashes.slice(i, i + 90);
+    const rows = await env.DB.prepare(`SELECT sha256 FROM document_version WHERE sha256 IN (${part.map(() => "?").join(",")})`)
+      .bind(...part)
+      .all<{ sha256: string }>();
+    known.push(...rows.results.map((r) => r.sha256));
+  }
+  return json({ known });
+}
+
 // ------------------------------------------------------------------ corrections (public)
 
 export const CorrectionInput = z.object({

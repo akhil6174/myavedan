@@ -59,7 +59,7 @@ def classify_and_link(pages: list[Page], advt_no_hint: str | None) -> dict[str, 
 
 def parse_pdf(data: bytes, ocr_languages: str = "hin+eng") -> list[Page]:
     """Stage 05. Text and tables for every page. Pages without a usable text layer go to OCR."""
-    import fitz  # PyMuPDF
+    import pymupdf as fitz
 
     pages: list[Page] = []
     with fitz.open(stream=data, filetype="pdf") as doc:
@@ -74,13 +74,22 @@ def parse_pdf(data: bytes, ocr_languages: str = "hin+eng") -> list[Page]:
             if len(text.strip()) >= MIN_TEXT_CHARS:
                 pages.append(Page(number=index + 1, text=text, tables=tables))
             else:
-                pages.append(Page(number=index + 1, text=_ocr_page(page, ocr_languages), ocr=True, tables=tables))
+                try:
+                    pages.append(Page(number=index + 1, text=_ocr_page(page, ocr_languages), ocr=True, tables=tables))
+                except Exception:  # Tesseract not installed or failed: keep the page, flag it for the reviewer
+                    pages.append(Page(number=index + 1, text=text, ocr=False, tables=tables))
     return pages
 
 
 def _ocr_page(page: object, languages: str) -> str:
+    import os
+
     import pytesseract
     from PIL import Image
+
+    default = os.path.join("C:\\", "Program Files", "Tesseract-OCR", "tesseract.exe")
+    if os.name == "nt" and os.path.exists(default):
+        pytesseract.pytesseract.tesseract_cmd = default
 
     pix = page.get_pixmap(dpi=300)  # type: ignore[attr-defined]
     image = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
