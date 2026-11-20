@@ -67,8 +67,10 @@ def validate_draft(draft: dict[str, Any], official_hosts: list[str]) -> list[dic
                 flags.append(_flag(f"posts.{i}.rules.{j}", "dob_window_order", "born_on_or_after is later than born_on_or_before"))
             if as_on and after and before:
                 youngest = _years_between(before, as_on)
-                oldest = _years_between(after, as_on)
-                if youngest < MIN_PLAUSIBLE_AGE or oldest > MAX_PLAUSIBLE_AGE:
+                oldest = _years_between(after, as_on) - 1 / 365  # the window ends the day before the next birthday
+                no_minimum = before >= as_on  # notice states only a maximum age
+                no_maximum = after <= "1900-01-01"  # notice states only a minimum age
+                if (not no_minimum and youngest < MIN_PLAUSIBLE_AGE) or (not no_maximum and oldest > MAX_PLAUSIBLE_AGE):
                     flags.append(
                         _flag(f"posts.{i}.rules.{j}", "implausible_age", f"age window works out to {youngest:.0f}–{oldest:.0f} years", "warning")
                     )

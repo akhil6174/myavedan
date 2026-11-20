@@ -15,7 +15,7 @@ import urllib.request
 from typing import Any
 
 API = "https://generativelanguage.googleapis.com/v1beta"
-DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_MODEL = "gemini-3.8-flash"  # pinned; change deliberately and re-run the golden set
 
 DATE_KINDS = ["notification", "apply_start", "apply_end", "fee_end", "correction_start", "correction_end", "exam", "admit_card", "result"]
 LEVELS = ["10th", "12th", "iti", "diploma", "graduate", "postgraduate", "doctorate"]
@@ -122,7 +122,7 @@ SCHEMA: dict[str, Any] = {
                         },
                     },
                 },
-                "required": ["name", "vacancies", "pay", "location", "page", "snippet"],
+                "required": ["name", "vacancies", "pay", "location", "page", "snippet", "age", "qualification", "other_conditions"],
             },
         },
         "fees": {
@@ -148,6 +148,9 @@ Rules:
 - Convert dates written as DD.MM.YYYY or DD/MM/YYYY to YYYY-MM-DD. Indian dates are day-first.
 - Read the whole notice, including annexures and tables at the end: post-wise rules, relaxations and fee exemptions are often there.
 - One entry in posts per distinct post. Give each post its own age, qualification and conditions, even if they repeat.
+- Always fill age and qualification for every post when the notice states them anywhere (often in a 'brief summary', eligibility section or annexure). Use null only if the notice truly says nothing.
+- other_conditions: experience, domicile, physical standards, typing/skill speed, licences, marks percentage. Mark blocking=true when the notice says it is required.
+- If only a maximum age is given, set min_age to -1 and still fill max_age and as_on.
 - Age: if the notice gives a birth-date window ("born not before X and not after Y"), fill born_on_or_after and born_on_or_before. Always fill min_age, max_age and as_on when stated.
 - Relaxations: list each group separately (OBC, SC, ST, EWS, PwBD, ESM). Use -1 years when the notice says "as per rules" without a number.
 - Fees: amounts in rupees as numbers; 0 for exempted groups.
@@ -214,5 +217,7 @@ def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | N
             last = e
             if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
                 raise GeminiError(f"quota exhausted: {e}") from e
+            if any(f"Gemini API {code}" in str(e) for code in (400, 401, 403, 404)):
+                raise  # a request that can't succeed on retry
             time.sleep(5 * (attempt + 1))
     raise GeminiError(f"extraction failed after {retries + 1} attempts: {last}")

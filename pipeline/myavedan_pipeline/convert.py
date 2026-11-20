@@ -44,12 +44,26 @@ def dob_window(age: dict) -> tuple[str, str] | None:
         return after, before
     as_on = _iso(age.get("as_on"))
     lo, hi = age.get("min_age", -1), age.get("max_age", -1)
-    if not as_on or lo is None or hi is None or lo < 0 or hi < 0:
+    lo = -1 if lo is None else lo
+    hi = -1 if hi is None else hi
+    if not as_on or (lo < 0 and hi < 0):
         return None
     cut = date.fromisoformat(as_on)
-    before_d = _same_day_years_earlier(cut, lo)
-    after_d = _same_day_years_earlier(cut, hi + 1) + timedelta(days=1)
+    # Only a maximum stated: no lower age bound beyond being born by the cut-off date.
+    before_d = _same_day_years_earlier(cut, lo) if lo >= 0 else cut
+    # Only a minimum stated: no upper bound; use a date no applicant could predate.
+    after_d = _same_day_years_earlier(cut, hi + 1) + timedelta(days=1) if hi >= 0 else date(1900, 1, 1)
     return after_d.isoformat(), before_d.isoformat()
+
+
+def normalise_url(value: str | None) -> str | None:
+    """Notices often print links without a scheme ("www.ibps.in"); the site needs a full https URL."""
+    url = (value or "").strip().rstrip(".,;)")
+    if not url:
+        return None
+    if not re.match(r"^https?://", url, re.I):
+        url = "https://" + url.lstrip("/")
+    return url if re.match(r"^https?://[a-z0-9.-]+\.[a-z]{2,}", url, re.I) else None
 
 
 def slugify(*parts: str) -> str:
@@ -157,7 +171,7 @@ def to_draft(ex: dict, *, organization: dict, notice_url: str, official_page: st
         })
 
     total = ex.get("total_vacancies")
-    apply_url = (ex.get("apply_url") or "").strip() or None
+    apply_url = normalise_url(ex.get("apply_url"))
     jurisdiction = organization["jurisdiction"]
     locations = sorted({p["location"] for p in posts if p.get("location")}) or (["All India"] if jurisdiction == "central" else [organization.get("state") or "India"])
 

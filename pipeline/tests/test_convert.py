@@ -12,9 +12,14 @@ def test_dob_window_from_ages_matches_how_notices_word_it():
     assert dob_window({"as_on": "2027-01-01", "min_age": 18, "max_age": 27, "born_on_or_after": "", "born_on_or_before": ""}) == ("1999-01-02", "2009-01-01")
 
 
-def test_dob_window_needs_ages_and_a_cutoff():
+def test_dob_window_needs_an_age_and_a_cutoff():
     assert dob_window({"as_on": "", "min_age": 18, "max_age": 27}) is None
-    assert dob_window({"as_on": "2027-01-01", "min_age": -1, "max_age": 27}) is None
+    assert dob_window({"as_on": "2027-01-01", "min_age": -1, "max_age": -1}) is None
+
+
+def test_dob_window_with_only_a_maximum_age():
+    # SBI: "Maximum 50 years (As on 31.10.2026)"
+    assert dob_window({"as_on": "2026-10-31", "min_age": -1, "max_age": 50, "born_on_or_after": "", "born_on_or_before": ""}) == ("1975-11-01", "2026-10-31")
 
 
 def test_dob_window_handles_29_february():
@@ -83,3 +88,12 @@ def test_grounding_and_flags():
     codes = {f["code"] for f in flags}
     assert "unread_pages" in codes and "ungrounded" in codes
     assert "_host" not in draft
+
+
+def test_links_without_a_scheme_become_https():
+    from myavedan_pipeline.convert import normalise_url
+
+    assert normalise_url("www.ibps.in") == "https://www.ibps.in"
+    assert normalise_url("https://ibps.in/apply).") == "https://ibps.in/apply"
+    assert normalise_url("") is None
+    assert normalise_url("not a link") is None
