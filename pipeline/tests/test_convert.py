@@ -97,3 +97,22 @@ def test_links_without_a_scheme_become_https():
     assert normalise_url("https://ibps.in/apply).") == "https://ibps.in/apply"
     assert normalise_url("") is None
     assert normalise_url("not a link") is None
+
+
+def test_mismatch_names_what_the_quote_says():
+    from myavedan_pipeline.convert import describe_mismatch
+
+    # The RRB case: 1265 extracted, page 4 quote says 1215.
+    msg = describe_mismatch(1265, "Total Vacancies (All RRBs) Station Master 6 35400 A-2 20-33 Years 1215")
+    assert msg and "1,265" in msg and "1,215" in msg
+    assert describe_mismatch("2026-12-15", "Last date: 18.12.2026") == "Date 2026-12-15 is not in its quote; the quote says 2026-12-18. Check which is right."
+    assert describe_mismatch(750, "Fee for General candidates") is None  # nothing to compare with
+
+
+def test_rrb_case_becomes_a_blocking_error():
+    d = to_draft(EXTRACTION, organization=ORG, notice_url="https://ssc.gov.in/notice.pdf", official_page="https://ssc.gov.in/", today="2026-11-20")
+    d["posts"][0]["vacancies"] = 1265
+    d["posts"][0]["evidence"] = {"page": 3, "snippet": "Station Master 20-33 Years 1215"}
+    _, flags = ground_and_flag(d, {3: "Total Vacancies Station Master 20-33 Years 1215"}, ["ssc.gov.in"], [])
+    f = next(f for f in flags if f["field"] == "posts.0")
+    assert f["code"] == "value_differs_from_quote" and f["severity"] == "error" and "1,215" in f["message"]

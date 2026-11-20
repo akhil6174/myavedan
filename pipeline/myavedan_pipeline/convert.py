@@ -201,6 +201,25 @@ def to_draft(ex: dict, *, organization: dict, notice_url: str, official_page: st
     }
 
 
+def describe_mismatch(value: object, snippet: str) -> str | None:
+    """When a number or date is not in its own quote, say what the quote does contain."""
+    from .grounding import dates_in, numbers_in
+
+    if isinstance(value, bool) or value is None:
+        return None
+    if isinstance(value, (int, float)):
+        others = sorted(n for n in numbers_in(snippet) if n != float(value) and n >= 1)
+        if others:
+            shown = ", ".join(f"{int(n):,}" if n == int(n) else str(n) for n in others[:5])
+            return f"Value {int(value) if value == int(value) else value:,} is not in its quote; the quote says {shown}. Check which is right."
+        return None
+    if isinstance(value, str) and re.match(r"\d{4}-\d{2}-\d{2}", value):
+        others = sorted(d for d in dates_in(snippet) if d != value[:10])
+        if others:
+            return f"Date {value[:10]} is not in its quote; the quote says {', '.join(others[:3])}. Check which is right."
+    return None
+
+
 def _walk_evidence(draft: dict):
     """(field key, value, evidence) for every cited field, keyed like the review console."""
     for i, d in enumerate(draft["dates"]):
@@ -215,17 +234,25 @@ def _walk_evidence(draft: dict):
 
 def ground_and_flag(draft: dict, pages: dict[int, str], official_hosts: list[str], unread_pages: list[int]) -> tuple[dict, list[dict]]:
     grounding: dict[str, dict] = {}
+    mismatch_flags: list[dict] = []
     for key, value, ev in _walk_evidence(draft):
         if not ev:
             continue
         page = pages.get(ev["page"], "")
-        result = check_field(value, page, ev["snippet"]) if page else {"grounded": False, "snippet_found": False}
+        result = check_field(value, page, ev["snippet"]) if page else {"grounded": False, "snippet_found": False, "value_in_snippet": False}
         grounding[key] = {"grounded": bool(result["grounded"]), "score": result.get("snippet_score", 0)}
+        if result["grounded"]:
+            continue
+        mismatch = describe_mismatch(value, ev["snippet"]) if result.get("snippet_found") else None
+        if mismatch:
+            # The quote is on the page but says something else: make the reviewer look before approving.
+            mismatch_flags.append({"field": key, "code": "value_differs_from_quote", "severity": "error", "message": mismatch})
+        elif not result.get("snippet_found"):
+            mismatch_flags.append({"field": key, "code": "ungrounded", "severity": "warning", "message": f"The cited quote was not found on page {ev['page']}. Check this field in the PDF."})
+        else:
+            mismatch_flags.append({"field": key, "code": "ungrounded", "severity": "warning", "message": "The quote is on the page but doesn't clearly state this value"})
 
-    flags = validate_draft(draft, official_hosts)
-    for key, g in grounding.items():
-        if not g["grounded"]:
-            flags.append({"field": key, "code": "ungrounded", "severity": "warning", "message": "The cited quote or value was not found on that page"})
+    flags = validate_draft(draft, official_hosts) + mismatch_flags
     if unread_pages:
         flags.append({"field": "summary", "code": "unread_pages", "severity": "warning",
                       "message": f"Pages without readable text (scanned, OCR unavailable): {', '.join(map(str, unread_pages[:20]))}. Check them in the PDF."})

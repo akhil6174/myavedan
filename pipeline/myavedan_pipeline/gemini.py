@@ -154,6 +154,8 @@ Rules:
 - Age: if the notice gives a birth-date window ("born not before X and not after Y"), fill born_on_or_after and born_on_or_before. Always fill min_age, max_age and as_on when stated.
 - Relaxations: list each group separately (OBC, SC, ST, EWS, PwBD, ESM). Use -1 years when the notice says "as per rules" without a number.
 - Fees: amounts in rupees as numbers; 0 for exempted groups.
+- The snippet must contain the exact value you report. Never cite one page for a number or date you read on another page.
+- If the notice gives different figures for the same thing in different places (for example a summary total and a table total), report the figure in the main summary or vacancy table, cite that page, and say so in summary_en.
 """
 
 
