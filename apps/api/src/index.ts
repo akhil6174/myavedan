@@ -6,6 +6,7 @@
  *   POST /api/ingest       pipeline drafts → D1 (HMAC-signed; the only write path from the pipeline)
  *   POST /api/corrections  "Report an error" from the public site (CORS, rate-limited)
  *   GET  /api/snapshot     approved records for the site build (bearer token)
+ *   POST /api/publish/complete  the Publish workflow reports a finished deploy (bearer token)
  *
  * Review console (admin host only):
  *   /api/auth/*            Better Auth: Google sign-in, sessions, sign-out
@@ -18,13 +19,14 @@ import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
 import { bulkApprove, corrections, decision, fieldDecision, queue, setRole, updateCorrection, users, version } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, snapshot } from "./routes";
+import { publishComplete, publishStatus, runPublishTrigger } from "./publish";
 
 function isAdminHost(request: Request, env: Env): boolean {
   const host = new URL(request.url).hostname;
   return host === env.ADMIN_HOST || host === "localhost" || host === "127.0.0.1";
 }
 
-async function admin(request: Request, env: Env, path: string): Promise<Response> {
+async function admin(request: Request, env: Env, ctx: ExecutionContext, path: string): Promise<Response> {
   const method = request.method;
   const url = new URL(request.url);
 
@@ -51,19 +53,27 @@ async function admin(request: Request, env: Env, path: string): Promise<Response
     if (m && method === "POST") return setRole(request, env, m[1]!, reviewer);
   }
 
+  if (path === "/api/admin/publish" && method === "GET") return publishStatus(env);
+  if (path === "/api/admin/publish" && method === "POST") return json(await runPublishTrigger(env, { force: true }));
+
   m = path.match(/^\/api\/admin\/versions\/([\w-]+)(?:\/(fields|bulk|decision))?$/);
   if (m) {
     const [, id, sub] = m as unknown as [string, string, string | undefined];
     if (!sub && method === "GET") return version(env, id);
     if (sub === "fields" && method === "POST") return fieldDecision(request, env, id, reviewer);
     if (sub === "bulk" && method === "POST") return bulkApprove(request, env, id, reviewer);
-    if (sub === "decision" && method === "POST") return decision(request, env, id, reviewer);
+    if (sub === "decision" && method === "POST") {
+      // An urgent approval publishes now instead of waiting for the next cron run.
+      return decision(request, env, id, reviewer, (urgent) => {
+        if (urgent) ctx.waitUntil(runPublishTrigger(env).then((r) => console.log(JSON.stringify({ job: "urgent-publish", ...r }))));
+      });
+    }
   }
   return problem(404, "not found");
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(request.url);
     const method = request.method;
 
@@ -75,11 +85,12 @@ export default {
       }
       if (pathname.startsWith("/api/admin/")) {
         if (!isAdminHost(request, env)) return problem(404, "not found");
-        return await admin(request, env, pathname);
+        return await admin(request, env, ctx, pathname);
       }
       if (pathname === "/api/health" && method === "GET") return await health(env);
       if (pathname === "/api/ingest" && method === "POST") return await ingest(request, env);
       if (pathname === "/api/snapshot" && method === "GET") return await snapshot(request, env);
+      if (pathname === "/api/publish/complete" && method === "POST") return await publishComplete(request, env);
       if (pathname === "/api/corrections") {
         if (method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders(request, env.ALLOWED_ORIGINS) });
         if (method === "POST") return await correction(request, env);
@@ -95,9 +106,8 @@ export default {
     }
   },
 
-  /** Publish trigger. Next: batch the publish queue and dispatch the site build. */
-  async scheduled(_controller: ScheduledController, env: Env): Promise<void> {
-    const waiting = await env.DB.prepare("SELECT COUNT(*) AS n FROM publish_queue WHERE batch_id IS NULL").first<{ n: number }>();
-    console.log(JSON.stringify({ job: "publish-trigger", waiting: waiting?.n ?? 0 }));
+  /** Every 30 minutes: dispatch a site rebuild if approved notices are waiting. */
+  async scheduled(_controller: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    ctx.waitUntil(runPublishTrigger(env).then((r) => console.log(JSON.stringify({ job: "publish-trigger", ...r }))));
   },
 } satisfies ExportedHandler<Env>;

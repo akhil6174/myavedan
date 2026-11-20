@@ -142,7 +142,7 @@ Stack versions chosen in M0: Node 24, Astro 7, Preact 10, Tailwind 4, Pagefind 1
 - [ ] Golden-set evaluation workflow; baseline accuracy recorded
 - **Done when:** a new notice on a staging source appears as a draft with evidence, and the eval reports critical-field accuracy.
 
-### M4 · Review console (weeks 5–9) — *console done; publishing step next*
+### M4 · Review console (weeks 5–9) — *built; waiting on two publishing secrets*
 - [x] Queue sorted by deadline, tier and change type
 - [x] Review screen: notice text with highlighted quote beside field cards; per-field approve, edit, reject; grounding and check results on each field
 - [x] Changes since the live version marked; reject and send-back actions with reasons
@@ -151,7 +151,8 @@ Stack versions chosen in M0: Node 24, Astro 7, Preact 10, Tailwind 4, Pagefind 1
 - [x] Admin API only on the console host, only for reviewers; email sign-in for local development only
 - [x] Reviewer sign-in with Google (Better Auth, as on TrutiAI); roles reader, reviewer, admin; Reviewers page for admins
 - [ ] Owner: Google OAuth client and staging secrets (see `docs/REVIEW_CONSOLE.md`)
-- [ ] Publish step: Worker cron batches the publish queue and dispatches a site build from the approved snapshot
+- [x] Publish trigger: cron every 30 min (urgent at once) dispatches the Publish workflow, which builds from approved notices and reports back (see `docs/PUBLISHING.md`)
+- [ ] Owner: `STAGING_PUBLISH_TOKEN` in GitHub and `GITHUB_DISPATCH_TOKEN` on the staging Worker
 - **Done when:** a reviewer approves a notice and it is live on staging within one publish cycle.
 
 ### M5 · Public launch scope (weeks 6–10)

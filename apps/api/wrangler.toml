@@ -21,6 +21,8 @@ migrations_dir = "../../migrations"
 ALLOWED_ORIGINS = "http://localhost:4321"
 ADMIN_HOST = "localhost"
 AUTH_URL = "http://localhost:8787"
+GITHUB_REPO = "akhil6174/myavedan"
+PUBLISH_ENV = "local"
 
 [triggers]
 crons = ["*/30 * * * *"]
@@ -45,6 +47,9 @@ migrations_dir = "../../migrations"
 ALLOWED_ORIGINS = "https://staging.myavedan.in"
 ADMIN_HOST = "admin-staging.myavedan.in"
 AUTH_URL = "https://admin-staging.myavedan.in"
+GITHUB_REPO = "akhil6174/myavedan"
+PUBLISH_ENV = "staging"
+PUBLISH_MIN_INTERVAL_MINUTES = "30"
 
 [env.staging.triggers]
 crons = ["*/30 * * * *"]
@@ -69,10 +74,13 @@ migrations_dir = "../../migrations"
 ALLOWED_ORIGINS = "https://myavedan.in"
 ADMIN_HOST = "admin.myavedan.in"
 AUTH_URL = "https://admin.myavedan.in"
+GITHUB_REPO = "akhil6174/myavedan"
+PUBLISH_ENV = "production"
+PUBLISH_MIN_INTERVAL_MINUTES = "120"
 
 [env.production.triggers]
 crons = ["*/30 * * * *"]
 
 # Secrets per environment: `wrangler secret put NAME --env staging|production`
 #   BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ADMIN_EMAILS (sign-in)
-#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT (pipeline and publishing)
+#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT, GITHUB_DISPATCH_TOKEN (pipeline and publishing)

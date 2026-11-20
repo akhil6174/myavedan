@@ -136,6 +136,13 @@ export const signIn = {
 
 export const api = {
   me: () => call<{ email: string; role: Role }>("/me"),
+  publishStatus: () =>
+    call<{
+      waiting: number;
+      configured: boolean;
+      batches: { id: string; requested_at: string; dispatched_at: string | null; deployed_at: string | null; urgent: number; versions: number }[];
+    }>("/publish"),
+  publishNow: () => call<{ dispatched: boolean; reason: string; versions?: number }>("/publish", { method: "POST" }),
   users: () => call<{ items: UserRow[] }>("/users"),
   setRole: (id: string, role: Role) => call<{ ok: true }>(`/users/${id}/role`, { method: "POST", body: { role } }),
   queue: () => call<{ items: QueueItem[]; open_corrections: number }>("/queue"),
