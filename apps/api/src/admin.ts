@@ -262,7 +262,13 @@ const Decision = z.object({
   change_note: z.string().max(300).optional(),
 });
 
-export async function decision(request: Request, env: Env, id: string, reviewer: Reviewer): Promise<Response> {
+export async function decision(
+  request: Request,
+  env: Env,
+  id: string,
+  reviewer: Reviewer,
+  onApproved: (urgent: boolean) => void = () => {},
+): Promise<Response> {
   const parsed = await body(request, Decision);
   if (!parsed.ok) return parsed.res;
   const { action, reason, urgent, change_note } = parsed.data;
@@ -326,6 +332,7 @@ export async function decision(request: Request, env: Env, id: string, reviewer:
     statements.push(env.DB.prepare("UPDATE document_version SET state = 'superseded' WHERE id = ?").bind(previous.current_version_id));
   }
   await env.DB.batch(statements);
+  onApproved(Boolean(urgent));
   return json({ ok: true, state: "approved", opportunity: { id: record.id, slug: record.slug }, urgent: Boolean(urgent) });
 }
 

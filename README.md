@@ -44,6 +44,7 @@ python -m pytest
 | `apps/api` | Cloudflare Worker: health, signed ingest, error reports, approved-snapshot export, review console API and hosting |
 | `apps/admin` | Review console (Preact): queue, side-by-side review against the notice, approval, error reports. See [docs/REVIEW_CONSOLE.md](docs/REVIEW_CONSOLE.md) |
 | `migrations` | D1 schema |
+| `scripts/fetch-snapshot.mjs` | Downloads approved notices for a site build. See [docs/PUBLISHING.md](docs/PUBLISHING.md) |
 | `pipeline` | Python pipeline: section map, grounding check, validation, signed ingest client; network and AI stages arrive in M3 |
 | `data/snapshot.json` | Sample notices (invented, marked `"sample": true`) the site builds from in development |
 

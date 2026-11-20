@@ -1,0 +1,66 @@
+name: Publish
+
+# Rebuilds the public site from approved notices.
+#  - repository_dispatch "publish": sent by the API when approvals are waiting (every 30 min, or at once if urgent)
+#  - schedule: nightly at 00:30 IST, so "closing soon" lists and statuses stay fresh
+#  - workflow_dispatch: run by hand from the Actions tab
+on:
+  repository_dispatch:
+    types: [publish]
+  schedule:
+    - cron: "0 19 * * *" # 19:00 UTC = 00:30 IST
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which site to rebuild
+        type: choice
+        options: [staging, production]
+        default: staging
+
+concurrency:
+  group: publish-${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+    env:
+      TARGET: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+      BATCH_ID: ${{ github.event.client_payload.batch_id || '' }}
+      API_BASE: ${{ (github.event.client_payload.environment || github.event.inputs.environment) == 'production' && 'https://api.myavedan.in' || 'https://api-staging.myavedan.in' }}
+      PUBLISH_TOKEN: ${{ (github.event.client_payload.environment || github.event.inputs.environment) == 'production' && secrets.PRODUCTION_PUBLISH_TOKEN || secrets.STAGING_PUBLISH_TOKEN }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Download approved notices
+        run: node scripts/fetch-snapshot.mjs "$TARGET"
+
+      - name: Validate snapshot
+        run: npm run validate:snapshot
+
+      - name: Build site
+        run: npm run build
+
+      - name: Deploy site
+        working-directory: apps/web
+        run: npx wrangler deploy --env "$TARGET"
+
+      - name: Tell the API the batch is live
+        if: env.PUBLISH_TOKEN != ''
+        run: |
+          curl -sf -X POST "$API_BASE/api/publish/complete" \
+            -H "Authorization: Bearer $PUBLISH_TOKEN" -H "Content-Type: application/json" \
+            -d "{\"batch_id\": \"$BATCH_ID\"}"

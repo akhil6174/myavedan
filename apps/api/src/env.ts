@@ -13,6 +13,16 @@ export interface Env {
   /** Salt for hashing client IPs used only for abuse limits. */
   IP_HASH_SALT?: string;
 
+  // ---- publishing ----
+  /** "owner/repo" whose Publish workflow rebuilds the site. */
+  GITHUB_REPO?: string;
+  /** Fine-grained GitHub token allowed to send repository_dispatch to GITHUB_REPO. */
+  GITHUB_DISPATCH_TOKEN?: string;
+  /** Which environment the Publish workflow should rebuild: staging | production. */
+  PUBLISH_ENV?: string;
+  /** Minimum minutes between regular publishes (urgent approvals skip it). */
+  PUBLISH_MIN_INTERVAL_MINUTES?: string;
+
   // ---- sign-in (Better Auth, as on TrutiAI) ----
   /** Public URL of the review console, e.g. https://admin-staging.myavedan.in. */
   AUTH_URL?: string;

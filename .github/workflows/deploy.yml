@@ -58,6 +58,12 @@ jobs:
         working-directory: apps/api
         run: npx wrangler deploy --env "$TARGET"
 
+      - name: Download approved notices
+        env:
+          API_BASE: ${{ env.TARGET == 'production' && 'https://api.myavedan.in' || 'https://api-staging.myavedan.in' }}
+          PUBLISH_TOKEN: ${{ env.TARGET == 'production' && secrets.PRODUCTION_PUBLISH_TOKEN || secrets.STAGING_PUBLISH_TOKEN }}
+        run: node scripts/fetch-snapshot.mjs "$TARGET" && npm run validate:snapshot
+
       - name: Build site
         run: npm run build
 

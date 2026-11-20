@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 import { daysBetween, formatDate, formatDateTime, istDate } from "@myavedan/schema/dates";
 import { api, type QueueItem } from "./api";
+import { PublishPanel } from "./PublishPanel";
 
 const KIND: Record<string, string> = {
   notice: "New notice",
@@ -41,6 +42,8 @@ export function Queue() {
           </a>
         )}
       </div>
+
+      <PublishPanel />
 
       {error && <p class="notice notice-warn mt-6">{error}</p>}
       {!data && !error && <p class="mt-8 text-ink-3">Loading…</p>}
