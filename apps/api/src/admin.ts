@@ -329,6 +329,32 @@ export async function decision(request: Request, env: Env, id: string, reviewer:
   return json({ ok: true, state: "approved", opportunity: { id: record.id, slug: record.slug }, urgent: Boolean(urgent) });
 }
 
+// ------------------------------------------------------------------ reviewers (admins only)
+
+export async function users(env: Env): Promise<Response> {
+  const rows = await env.DB.prepare("SELECT id, name, email, role, created_at FROM user ORDER BY role DESC, email ASC LIMIT 500").all();
+  return json({ items: rows.results });
+}
+
+const RoleUpdate = z.object({ role: z.enum(["reader", "reviewer", "admin"]) });
+
+export async function setRole(request: Request, env: Env, id: string, actor: Reviewer): Promise<Response> {
+  const parsed = await body(request, RoleUpdate);
+  if (!parsed.ok) return parsed.res;
+  const target = await env.DB.prepare("SELECT email, role FROM user WHERE id = ?").bind(id).first<{ email: string; role: string }>();
+  if (!target) return problem(404, "user not found");
+  if (target.email.toLowerCase() === actor.email && parsed.data.role !== "admin") {
+    return problem(409, "you can't remove your own admin role");
+  }
+  await env.DB.batch([
+    env.DB.prepare("UPDATE user SET role = ?, updated_at = unixepoch() WHERE id = ?").bind(parsed.data.role, id),
+    // Signing them out makes a demotion take effect immediately.
+    ...(parsed.data.role === "reader" ? [env.DB.prepare("DELETE FROM session WHERE user_id = ?").bind(id)] : []),
+  ]);
+  console.log(JSON.stringify({ audit: "role_change", by: actor.email, target: target.email, from: target.role, to: parsed.data.role }));
+  return json({ ok: true, role: parsed.data.role });
+}
+
 // ------------------------------------------------------------------ corrections
 
 export async function corrections(env: Env, status: string | null): Promise<Response> {

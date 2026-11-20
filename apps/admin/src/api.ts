@@ -100,8 +100,44 @@ export interface Correction {
   created_at: string;
 }
 
+export type Role = "reader" | "reviewer" | "admin";
+
+export interface UserRow {
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+  created_at: number;
+}
+
+/** Better Auth endpoints (same origin). */
+async function authCall<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`/api/auth${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    credentials: "same-origin",
+  });
+  const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  if (!res.ok) throw new ApiError(res.status, String(data.message ?? data.error ?? `Sign-in failed (${res.status})`), data);
+  return data as T;
+}
+
+export const signIn = {
+  options: () => call<{ configured: boolean; google: boolean; dev: boolean }>("/sign-in-options"),
+  google: async () => {
+    const r = await authCall<{ url?: string }>("/sign-in/social", { provider: "google", callbackURL: "/" });
+    if (r.url) location.href = r.url;
+  },
+  devSignIn: (email: string, password: string) => authCall("/sign-in/email", { email, password }),
+  devSignUp: (email: string, password: string, name: string) => authCall("/sign-up/email", { email, password, name }),
+  signOut: () => authCall("/sign-out", {}),
+};
+
 export const api = {
-  me: () => call<{ email: string }>("/me"),
+  me: () => call<{ email: string; role: Role }>("/me"),
+  users: () => call<{ items: UserRow[] }>("/users"),
+  setRole: (id: string, role: Role) => call<{ ok: true }>(`/users/${id}/role`, { method: "POST", body: { role } }),
   queue: () => call<{ items: QueueItem[]; open_corrections: number }>("/queue"),
   version: (id: string) => call<VersionDetail>(`/versions/${id}`),
   field: (id: string, body: { key: string; action: "approve" | "edit" | "reject"; value?: unknown; reason?: string }) =>

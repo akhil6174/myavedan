@@ -20,6 +20,7 @@ migrations_dir = "../../migrations"
 [vars]
 ALLOWED_ORIGINS = "http://localhost:4321"
 ADMIN_HOST = "localhost"
+AUTH_URL = "http://localhost:8787"
 
 [triggers]
 crons = ["*/30 * * * *"]
@@ -43,6 +44,7 @@ migrations_dir = "../../migrations"
 [env.staging.vars]
 ALLOWED_ORIGINS = "https://staging.myavedan.in"
 ADMIN_HOST = "admin-staging.myavedan.in"
+AUTH_URL = "https://admin-staging.myavedan.in"
 
 [env.staging.triggers]
 crons = ["*/30 * * * *"]
@@ -66,9 +68,11 @@ migrations_dir = "../../migrations"
 [env.production.vars]
 ALLOWED_ORIGINS = "https://myavedan.in"
 ADMIN_HOST = "admin.myavedan.in"
+AUTH_URL = "https://admin.myavedan.in"
 
 [env.production.triggers]
 crons = ["*/30 * * * *"]
 
 # Secrets per environment: `wrangler secret put NAME --env staging|production`
-#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT, ACCESS_TEAM_DOMAIN, ACCESS_AUD, ADMIN_EMAILS (optional)
+#   BETTER_AUTH_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, ADMIN_EMAILS (sign-in)
+#   INGEST_HMAC_SECRET, PUBLISH_TOKEN, IP_HASH_SALT (pipeline and publishing)
