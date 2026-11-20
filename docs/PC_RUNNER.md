@@ -57,6 +57,15 @@ cd C:\actions-runner; .\run.cmd
 
 Leave that window open. It shows "Listening for Jobs". Close the window to stop it.
 
+**Start it automatically when you log in (recommended):**
+1. Press **Win + R**, type `shell:startup`, press Enter. A folder opens.
+2. Right-click inside it → **New → Shortcut** → location: `C:\actions-runner\run.cmd` → name it `MyAvedan reader` → **Finish**.
+3. Right-click the new shortcut → **Properties** → **Run: Minimized** → OK.
+
+From now on the runner starts minimised every time you log in. This is simpler than a Windows service, and it uses your own Python, so nothing else needs configuring.
+
+**Sleep:** runs only happen while the PC is awake. **Settings → System → Power & battery → Screen and sleep → "When plugged in, put my device to sleep after": Never** (or make sure it's awake at 11:00 and 19:00).
+
 On GitHub, **Settings → Actions → Runners** should show `myavedan-pc` as **Idle** (green).
 
 ### 4. Gemini key on the PC (for testing)
