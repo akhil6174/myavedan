@@ -1,16 +1,29 @@
 name: Notice reader
 
-# Runs on the owner's PC in India (self-hosted runner labelled "india"), because many government
+# Runs on a computer in India (self-hosted runner labelled "india"), because many government
 # sites don't answer GitHub's US servers. See docs/PC_RUNNER.md.
 #
-# Safety: this workflow never runs for pull requests. Only the owner can start it (Run workflow).
-# The schedule is added once automatic discovery of new notices exists.
+# Safety: this workflow never runs for pull requests. It starts only on its schedule or when the
+# owner presses Run workflow.
 on:
+  schedule:
+    # 09:00, 14:00 and 20:00 IST. If the runner is offline, the run waits and then expires; nothing breaks.
+    - cron: "30 3 * * *"
+    - cron: "30 8 * * *"
+    - cron: "30 14 * * *"
   workflow_dispatch:
     inputs:
-      notices:
-        description: Test notices to read (space-separated folders), or "all"
-        default: all
+      mode:
+        description: What to do
+        type: choice
+        options: [discover, golden]
+        default: discover
+      max_new:
+        description: Most new notices to read in this run
+        default: "10"
+      from_backlog:
+        description: Also read this many notices already on the sites before the first visit
+        default: "0"
       dry_run:
         description: Save results only, don't send to the review console
         type: boolean
@@ -27,7 +40,7 @@ jobs:
   read:
     if: github.repository == 'akhil6174/myavedan'
     runs-on: [self-hosted, india]
-    timeout-minutes: 60
+    timeout-minutes: 180
     env:
       PYTHONUTF8: "1"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -45,9 +58,12 @@ jobs:
       - name: Read notices
         working-directory: pipeline
         run: |
-          $cliArgs = @("golden")
-          if ("${{ github.event.inputs.notices }}" -ne "all" -and "${{ github.event.inputs.notices }}" -ne "") {
-            $cliArgs += "--only"; $cliArgs += ("${{ github.event.inputs.notices }}" -split " ")
+          $mode = "${{ github.event.inputs.mode }}"; if (-not $mode) { $mode = "discover" }
+          $cliArgs = @($mode)
+          if ($mode -eq "discover") {
+            $max = "${{ github.event.inputs.max_new }}"; if (-not $max) { $max = "10" }
+            $backlog = "${{ github.event.inputs.from_backlog }}"; if (-not $backlog) { $backlog = "0" }
+            $cliArgs += @("--max-new", $max, "--from-backlog", $backlog)
           }
           if ("${{ github.event.inputs.dry_run }}" -eq "true") { $cliArgs += "--dry-run" }
           python -m myavedan_pipeline.cli @cliArgs

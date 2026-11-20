@@ -15,7 +15,11 @@ import urllib.request
 from typing import Any
 
 API = "https://generativelanguage.googleapis.com/v1beta"
-DEFAULT_MODEL = "gemini-3.8-flash"  # pinned; change deliberately and re-run the golden set
+# Pinned; change deliberately and re-run the golden set.
+# Measured on the 5 test notices (20 Nov 2026): the lite model was ~25x faster but missed 4 of
+# UPPSC's 12 posts, so the full model is the default. It takes ~4-6 min per long notice on the free tier.
+DEFAULT_MODEL = "gemini-3.8-flash"
+LITE_MODEL = "gemini-3.5-flash-lite"
 
 DATE_KINDS = ["notification", "apply_start", "apply_end", "fee_end", "correction_start", "correction_end", "exam", "admit_card", "result"]
 LEVELS = ["10th", "12th", "iti", "diploma", "graduate", "postgraduate", "doctorate"]
@@ -163,7 +167,7 @@ class GeminiError(RuntimeError):
     pass
 
 
-def _post(url: str, body: dict, key: str, timeout: float = 300) -> dict:
+def _post(url: str, body: dict, key: str, timeout: float = 900) -> dict:
     req = urllib.request.Request(
         url,
         data=json.dumps(body).encode(),
@@ -176,6 +180,8 @@ def _post(url: str, body: dict, key: str, timeout: float = 300) -> dict:
     except urllib.error.HTTPError as e:
         detail = e.read().decode(errors="replace")[:500]
         raise GeminiError(f"Gemini API {e.code}: {detail}") from e
+    except (TimeoutError, OSError) as e:
+        raise GeminiError(f"Gemini did not answer in time ({type(e).__name__})") from e
 
 
 def list_models(key: str) -> list[str]:
@@ -203,12 +209,22 @@ def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | N
             "responseSchema": SCHEMA,
             "temperature": 0,
             "maxOutputTokens": 32768,
+            # Extraction is reading, not reasoning: little thinking is much faster at the same accuracy.
+            "thinkingConfig": {"thinkingLevel": os.environ.get("GEMINI_THINKING", "low")},
         },
     }
     last: Exception | None = None
     for attempt in range(retries + 1):
         try:
-            data = _post(f"{API}/models/{model}:generateContent", body, key)
+            try:
+                data = _post(f"{API}/models/{model}:generateContent", body, key)
+            except GeminiError as e:
+                # Older models don't accept thinkingLevel: retry once without it.
+                if "Gemini API 400" in str(e) and "thinking" in str(e).lower() and "thinkingConfig" in body["generationConfig"]:
+                    del body["generationConfig"]["thinkingConfig"]
+                    data = _post(f"{API}/models/{model}:generateContent", body, key)
+                else:
+                    raise
             candidate = (data.get("candidates") or [{}])[0]
             text = "".join(p.get("text", "") for p in candidate.get("content", {}).get("parts", []))
             if not text:

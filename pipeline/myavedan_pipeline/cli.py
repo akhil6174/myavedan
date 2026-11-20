@@ -20,7 +20,10 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 from . import gemini
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from .convert import ground_and_flag, to_draft
+from .discover import MAX_PDF_BYTES, Candidate, Fetcher, State, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
 from .sections import coverage_report, section_map
@@ -73,7 +76,10 @@ def chunks_from(pages: dict[int, str]) -> list[dict]:
 
 
 def process(pdf: Path, *, source: dict, document_url: str, dry_run: bool, model: str | None) -> dict:
-    data = pdf.read_bytes()
+    return process_bytes(pdf.read_bytes(), str(pdf.relative_to(ROOT)), source=source, document_url=document_url, dry_run=dry_run, model=model)
+
+
+def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, dry_run: bool, model: str | None, kind: str = "notice", insecure_tls: bool = False) -> dict:
     digest = sha256_hex(data)
     started = time.time()
     parsed = parse_pdf(data)
@@ -82,20 +88,23 @@ def process(pdf: Path, *, source: dict, document_url: str, dry_run: bool, model:
     coverage = coverage_report(section_map([p.text for p in parsed]))
 
     readable = [(n, t) for n, t in sorted(pages.items()) if n not in unread]
-    extraction, usage = gemini.extract(readable, model=model)
-
     today = datetime.now(IST).date().isoformat()
     org = organization_for(source, document_url)
-    draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     hosts = sorted({host(source["url"]), host(document_url)})
+
+    extraction, usage = gemini.extract(readable, model=model)
+    draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
+    if insecure_tls:
+        flags.append({"field": "links.notice_pdf", "code": "insecure_tls", "severity": "warning",
+                      "message": "The official site's security certificate couldn't be verified when downloading. Open the notice from the official site yourself to confirm it is genuine."})
     for missing in coverage["missing_sections"]:
         flags.append({"field": "summary", "code": "section_not_found", "severity": "warning", "message": f"No page looked like a '{missing}' section"})
 
     payload = {
         "source_url": source["url"],
         "document_url": document_url,
-        "document_kind": "notice",
+        "document_kind": kind,
         "sha256": digest,
         "r2_key": f"raw/{source['id']}/{digest}.pdf",
         "bytes": len(data),
@@ -113,7 +122,7 @@ def process(pdf: Path, *, source: dict, document_url: str, dry_run: bool, model:
 
     grounded = sum(1 for g in draft["grounding"].values() if g["grounded"])
     summary = {
-        "pdf": str(pdf.relative_to(ROOT)),
+        "pdf": label,
         "pages": len(parsed),
         "unread_pages": unread,
         "posts": len(draft["posts"]),
@@ -136,22 +145,121 @@ def process(pdf: Path, *, source: dict, document_url: str, dry_run: bool, model:
     return summary
 
 
+def _run_parallel(jobs: list, workers: int) -> int:
+    """Run (label, callable) jobs, a few at a time; print one JSON line each. Returns the failure count."""
+    failed = 0
+    with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
+        futures = {pool.submit(fn): label for label, fn in jobs}
+        for fut in as_completed(futures):
+            try:
+                print(json.dumps(fut.result(), ensure_ascii=False))
+            except Exception as e:  # report and continue with the others
+                failed += 1
+                print(json.dumps({"pdf": futures[fut], "error": str(e)[:400]}, ensure_ascii=False))
+            sys.stdout.flush()
+    return failed
+
+
+def load_sources() -> dict[str, dict]:
+    return {s["id"]: s for s in json.loads((ROOT / "sources" / "national-north.json").read_text(encoding="utf-8"))["sources"]}
+
+
 def cmd_golden(args: argparse.Namespace) -> int:
     notices = json.loads((ROOT / "golden" / "notices.json").read_text(encoding="utf-8"))["notices"]
-    sources = {s["id"]: s for s in json.loads((ROOT / "sources" / "national-north.json").read_text(encoding="utf-8"))["sources"]}
-    failed = 0
+    sources = load_sources()
+    jobs = []
     for n in notices:
         if args.only and n["folder"] not in args.only:
             continue
         pdf = ROOT / "golden" / n["folder"] / n["file"]
-        try:
-            result = process(pdf, source=sources[n["source_id"]], document_url=n["source_url"], dry_run=args.dry_run, model=args.model)
-            print(json.dumps(result, ensure_ascii=False))
-        except Exception as e:  # report and continue with the next notice
-            failed += 1
-            print(json.dumps({"pdf": n["folder"], "error": str(e)[:400]}))
+        jobs.append((n["folder"], lambda pdf=pdf, n=n: process(pdf, source=sources[n["source_id"]], document_url=n["source_url"], dry_run=args.dry_run, model=args.model)))
+    return 1 if _run_parallel(jobs, args.workers) else 0
+
+
+# Extra official hosts some organisations publish on (keep in step with scripts/sources_sql.py).
+EXTRA_HOSTS = {"sbi": ["sbi.co.in"], "rrb-apply": ["rrbapply.gov.in"]}
+
+
+def state_path() -> Path:
+    return Path(os.environ.get("MYAVEDAN_STATE", Path.home() / ".myavedan" / "reader-state.json"))
+
+
+def cmd_discover(args: argparse.Namespace) -> int:
+    sources = [s for s in load_sources().values() if s.get("approved_by_owner") and (not args.sources or s["id"] in args.sources)]
+    state = State.load(state_path())
+    fetcher = Fetcher()
+    now = datetime.now(IST).replace(microsecond=0).isoformat()
+    todo: list[Candidate] = []
+
+    for s in sources:
+        hosts = sorted({host(s["url"]), *EXTRA_HOSTS.get(s["id"], [])})
+        first_visit = not state.sources.get(s["id"], {}).get("checked_at")
+        found, report = scan_source(fetcher, s, hosts, state)
+        for c in found:
+            if first_visit:
+                # Old notices already on the site: remember them, don't read them all at once.
+                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "backlog", "first_seen": now}
+            elif c.kind == "notice":
+                todo.append(c)
+            else:
+                # Admit cards, keys, results, corrigenda: need linking to their recruitment (next step).
+                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "needs_linking", "first_seen": now}
+        if first_visit:
+            report["first_visit_backlog"] = len(found)
+        print(json.dumps({"scan": report}, ensure_ascii=False))
         sys.stdout.flush()
+        state.save()
+
+    if args.from_backlog:
+        backlog = [Candidate(v["source"], url, v.get("text", ""), v["kind"]) for url, v in state.seen_urls.items()
+                   if v.get("status") == "backlog" and v.get("kind") == "notice" and (not args.sources or v["source"] in args.sources)]
+        todo += backlog[: args.from_backlog]
+
+    todo = todo[: args.max_new]
+    print(json.dumps({"to_read": len(todo)}))
+    # Download one at a time (polite to each site), then read in parallel.
+    downloads = []
+    for c in todo:
+        try:
+            got = fetcher.get(c.url, max_bytes=MAX_PDF_BYTES)
+            if not got.body.startswith(b"%PDF"):
+                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "not_pdf", "first_seen": now}
+                continue
+            downloads.append((c, got))
+        except Exception as e:  # try again next run
+            print(json.dumps({"download_failed": c.url, "error": str(e)[:200]}))
+    if downloads and not args.dry_run:
+        known = set(known_hashes([sha256_hex(g.body) for _, g in downloads]))
+    else:
+        known = set()
+
+    srcs = load_sources()
+    jobs = []
+    for c, got in downloads:
+        digest = sha256_hex(got.body)
+        if digest in known:
+            state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "already_sent", "sha256": digest, "first_seen": now}
+            continue
+        jobs.append((c.url, lambda c=c, got=got: _read_and_mark(state, c, got, srcs[c.source_id], args, now)))
+    failed = _run_parallel(jobs, args.workers)
+    state.save()
     return 1 if failed else 0
+
+
+def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse.Namespace, now: str) -> dict:
+    result = process_bytes(got.body, c.url, source=source, document_url=got.url, dry_run=args.dry_run, model=args.model, kind=c.kind, insecure_tls=got.insecure_tls)
+    state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
+    return result
+
+
+def known_hashes(hashes: list[str]) -> list[str]:
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if not url or not secret:
+        return []
+    try:
+        return post_draft(url.rstrip("/") + "/known", secret, {"sha256": hashes}).get("known", [])
+    except Exception:  # the server will still refuse duplicates; this only saves AI quota
+        return []
 
 
 def main() -> int:
@@ -161,14 +269,20 @@ def main() -> int:
     sub.add_parser("models")
     g = sub.add_parser("golden")
     g.add_argument("--only", nargs="*", help="folders to process, e.g. ssc ibps")
-    g.add_argument("--dry-run", action="store_true", help="save results locally, send nothing")
-    g.add_argument("--model", help="Gemini model (default: GEMINI_MODEL or gemini.DEFAULT_MODEL)")
+    d = sub.add_parser("discover")
+    d.add_argument("--sources", nargs="*", help="source ids to check (default: all approved)")
+    d.add_argument("--max-new", type=int, default=10, help="most notices to read in one run")
+    d.add_argument("--from-backlog", type=int, default=0, help="also read up to N notices found on earlier first visits")
+    for p in (g, d):
+        p.add_argument("--dry-run", action="store_true", help="save results locally, send nothing")
+        p.add_argument("--model", help="Gemini model (default: GEMINI_MODEL or gemini.DEFAULT_MODEL)")
+        p.add_argument("--workers", type=int, default=1, help="notices read at the same time (the free tier slows down above 1)")
     args = parser.parse_args()
     if args.cmd == "models":
         for m in gemini.list_models(os.environ.get("GEMINI_API_KEY", "")):
             print(m)
         return 0
-    return cmd_golden(args)
+    return cmd_discover(args) if args.cmd == "discover" else cmd_golden(args)
 
 
 if __name__ == "__main__":
