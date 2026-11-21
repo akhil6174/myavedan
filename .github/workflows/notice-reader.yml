@@ -7,10 +7,9 @@ name: Notice reader
 # Safety: this workflow never runs for pull requests. It starts only on its schedule or when the
 # owner presses Run workflow.
 on:
-  schedule:
-    # 11:00 and 19:00 IST. If no runner is online, the run waits and then expires; nothing breaks.
-    - cron: "30 5 * * *"
-    - cron: "30 13 * * *"
+  # No schedule: since 21 Nov 2026 the owner's PC runs the reader itself with Windows Task Scheduler
+  # at 11:00 and 19:00 IST (pipeline/scripts/run-reader.ps1, docs/PC_RUNNER.md). GitHub's link to the
+  # PC runner kept dropping mid-run. This workflow stays for manual runs on a server runner later.
   workflow_dispatch:
     inputs:
       mode:

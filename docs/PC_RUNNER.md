@@ -1,5 +1,7 @@
 # Notice reader on your PC
 
+> **Since 21 Nov 2026 the reader runs with Windows Task Scheduler, not the GitHub runner.** GitHub's connection to the PC runner dropped mid-run and GitHub then stopped the reader halfway. Task Scheduler runs it straight on the PC, with no GitHub in between. See **Task Scheduler (current)** below. The GitHub runner sections are kept for a server later.
+
 Many Indian government recruitment sites don't answer computers outside India (20 of 51 answered GitHub's US servers; 37 of 51 answered from India). So the notice reader runs on a computer in India: your Windows PC for now, a free Indian cloud server before launch.
 
 Your PC becomes a **GitHub self-hosted runner**: it waits for jobs from GitHub, runs them, and reports back. Only the **Notice reader** workflow uses it. Website builds and deploys stay on GitHub's own servers.
@@ -77,11 +79,20 @@ The runner works in its own copy of the repo (`C:\actions-runner\_work\...`), cl
 
 For running the reader by hand from the project folder, `pipeline\.env` also works (`.gitignore` excludes it). If neither has a key, the run stops at once with a message saying where to put it.
 
-## How it runs
+## Task Scheduler (current)
 
-- **Schedule:** 11:00 and 19:00 IST, if the runner is started then. Missed runs are simply skipped.
-- **By hand:** GitHub → **Actions → Notice reader → Run workflow**.
-- New drafts appear in the review console at https://admin-staging.myavedan.in.
+1. `%USERPROFILE%\.myavedan\.env` holds two lines: `GEMINI_API_KEY=...` and `INGEST_HMAC_SECRET=...` (the production ingest secret). It's outside the repo and never committed.
+2. Install the task once, from the `pipeline` folder in PowerShell:
+
+   ```
+   powershell -ExecutionPolicy Bypass -File scripts\install-reader-task.ps1
+   ```
+
+- **Schedule:** 11:00 and 19:00 every day. If the PC was off or asleep then, it runs as soon as it's back.
+- **By hand:** `Start-ScheduledTask 'MyAvedan notice reader'`, or `scriptsun-reader.ps1 -FromBacklog 3` to also read older notices.
+- **Logs:** `%USERPROFILE%\.myavedan\logseader-<date>-<time>.log`, the last 60 kept.
+- **Code updates:** before each run it pulls the latest `main`, if the project folder is on `main` with no local changes.
+- New drafts appear in the review console at https://admin.myavedan.in.
 
 ## Moving to a server later
 The same runner can be installed on a free Oracle Cloud server in Mumbai or Hyderabad (Linux) so it runs 24/7. The workflow doesn't change; only the machine does.
