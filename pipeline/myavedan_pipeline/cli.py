@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import MAX_PDF_BYTES, Candidate, Fetcher, State, scan_source
+from .discover import MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
 from .sections import coverage_report, section_map
@@ -200,7 +200,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
         for c in found:
             if first_visit:
                 # Old notices already on the site: remember them, don't read them all at once.
-                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "backlog", "first_seen": now}
+                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "backlog", "first_seen": now}
             elif c.kind == "notice":
                 todo.append(c)
             else:
@@ -216,43 +216,54 @@ def cmd_discover(args: argparse.Namespace) -> int:
     if links_found:
         sent = send_links(links_found, dry_run=args.dry_run)
         for _, c in links_found:
-            state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "link_sent" if sent else "link_pending", "first_seen": now}
+            state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "link_sent" if sent else "link_pending", "first_seen": now}
         print(json.dumps({"links_found": len(links_found), "sent": sent}))
         state.save()
-
-    if args.from_backlog:
-        backlog = [Candidate(v["source"], url, v.get("text", ""), v["kind"]) for url, v in state.seen_urls.items()
-                   if v.get("status") == "backlog" and v.get("kind") == "notice" and (not args.sources or v["source"] in args.sources)]
-        todo += backlog[: args.from_backlog]
 
     # Daily Gemini cap, counted in IST days across runs.
     today = datetime.now(IST).date().isoformat()
     used = state.usage.get(today, 0)
     allowed = max(0, int(os.environ.get("GEMINI_DAILY_LIMIT", "16")) - used)
-    todo = todo[: min(args.max_new, allowed)]
-    print(json.dumps({"to_read": len(todo), "gemini_calls_today": used, "daily_limit_left": allowed}))
-    # Download one at a time (polite to each site), then read in parallel.
+    want_new = min(len(todo), args.max_new, allowed)
+    want_backlog = min(args.from_backlog, max(0, allowed - want_new))
+
+    # Backlog: the most likely current notification PDFs first.
+    year = today[:4]
+    backlog = sorted(
+        (
+            Candidate(v["source"], v.get("url", key), v.get("text", ""), v["kind"], key)
+            for key, v in state.seen_urls.items()
+            if v.get("status") == "backlog" and v.get("kind") == "notice" and (not args.sources or v["source"] in args.sources)
+        ),
+        key=lambda c: -notice_score(c.text, c.url, year),
+    )
+    print(json.dumps({"new_notices": len(todo), "reading_new": want_new, "reading_backlog": want_backlog, "gemini_calls_today": used, "daily_limit_left": allowed}))
+
+    srcs = load_sources()
     downloads = []
-    for c in todo:
-        try:
-            got = fetcher.get(c.url, max_bytes=MAX_PDF_BYTES)
-            if not got.body.startswith(b"%PDF"):
-                state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "not_pdf", "first_seen": now}
+    # Keep trying candidates until enough real PDFs are in hand (some links are web pages or dead).
+    for pool, wanted in ((todo, want_new), (backlog, want_backlog)):
+        got_count, tries = 0, 0
+        for c in pool:
+            if got_count >= wanted or tries >= wanted * 4 + 2:
+                break
+            tries += 1
+            got = _download_notice(fetcher, c, srcs[c.source_id])
+            if got is None:
+                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "not_pdf", "first_seen": now}
                 continue
             downloads.append((c, got))
-        except Exception as e:  # try again next run
-            print(json.dumps({"download_failed": c.url, "error": str(e)[:200]}))
+            got_count += 1
     if downloads and not args.dry_run:
         known = set(known_hashes([sha256_hex(g.body) for _, g in downloads]))
     else:
         known = set()
 
-    srcs = load_sources()
     jobs = []
     for c, got in downloads:
         digest = sha256_hex(got.body)
         if digest in known:
-            state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "already_sent", "sha256": digest, "first_seen": now}
+            state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "already_sent", "sha256": digest, "first_seen": now}
             continue
         jobs.append((c.url, lambda c=c, got=got: _read_and_mark(state, c, got, srcs[c.source_id], args, now)))
     failed = _run_parallel(jobs, args.workers)
@@ -260,11 +271,30 @@ def cmd_discover(args: argparse.Namespace) -> int:
     return 1 if failed else 0
 
 
+def _download_notice(fetcher: Fetcher, c: Candidate, source: dict):
+    """The notice PDF behind a link: the link itself, or the PDF on the page it opens. None if neither."""
+    try:
+        got = fetcher.get(c.url, max_bytes=MAX_PDF_BYTES)
+        if is_pdf(got.body):
+            return got
+        if b"<html" in got.body[:4000].lower() or b"<!doctype" in got.body[:4000].lower():
+            hosts = sorted({host(source["url"]), host(c.url), *EXTRA_HOSTS.get(source["id"], [])})
+            inner = find_notice_pdf(got.body.decode("utf-8", errors="replace"), got.url, hosts)
+            if inner:
+                got2 = fetcher.get(inner, max_bytes=MAX_PDF_BYTES)
+                if is_pdf(got2.body):
+                    print(json.dumps({"followed_page_to_pdf": c.url, "pdf": inner}))
+                    return got2
+    except Exception as e:  # dead or slow link: count as unreadable this time
+        print(json.dumps({"download_failed": c.url, "error": str(e)[:200]}))
+    return None
+
+
 def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse.Namespace, now: str) -> dict:
     day = datetime.now(IST).date().isoformat()
     state.usage[day] = state.usage.get(day, 0) + 1  # count the attempt: failures use quota too
     result = process_bytes(got.body, c.url, source=source, document_url=got.url, dry_run=args.dry_run, model=args.model, kind=c.kind, insecure_tls=got.insecure_tls)
-    state.seen_urls[c.url] = {"source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
+    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
     return result
 
 
