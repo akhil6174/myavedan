@@ -41,9 +41,9 @@ UTS = {"delhi", "chandigarh", "jammu-kashmir", "ladakh"}
 
 
 def load_env() -> None:
-    """pipeline/.env, then ~/.myavedan/.env (next to the reader state). The second one is what the PC
-    runner uses: its checkout is a separate copy of the repo that has no .env, and is cleaned each run."""
-    for env in (ROOT / ".env", state_path().parent / ".env"):
+    """~/.myavedan/.env (next to the reader state: the PC's production settings) wins, then
+    pipeline/.env (hand testing, often staging) fills anything missing. Real environment variables win over both."""
+    for env in (state_path().parent / ".env", ROOT / ".env"):
         if not env.exists():
             continue
         for line in env.read_text(encoding="utf-8").splitlines():
