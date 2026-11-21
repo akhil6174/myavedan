@@ -1,6 +1,6 @@
 # Publishing
 
-**Production is the default** (since 21 Nov 2026): the reader sends to `api.myavedan.in`, reviewers work at `admin.myavedan.in`, and approvals publish `myavedan.in`. Staging (`*-staging.myavedan.in`) stays for testing changes. Until the first notice is approved on production, production builds are skipped (the site stays offline) instead of failing.
+**Production is the default** (since 21 Nov 2026): the reader sends to `api.myavedan.in`, reviewers work at `admin.myavedan.in`, and approvals publish `myavedan.in`. Staging (`*-staging.myavedan.in`) stays for testing changes. With no approved notices, production builds the real site with an honest "first verified notices are being added" message; it never uses sample data. Live since 21 Nov 2026.
 
 How an approved notice reaches the public site.
 

@@ -2,12 +2,13 @@
 import Base from "../layouts/Base.astro";
 import OpportunityCard from "../components/OpportunityCard.astro";
 import UpdateList from "../components/UpdateList.astro";
-import { closingSoon, latestOpenings, updates } from "../lib/snapshot";
+import { closingSoon, latestOpenings, opportunities, updates } from "../lib/snapshot";
 
 const soon = closingSoon(3);
 const soonIds = new Set(soon.map((o) => o.id));
 const latest = latestOpenings(6).filter((o) => !soonIds.has(o.id));
 const recent = updates(["admit_card", "answer_key", "result", "cutoff"], 5);
+const empty = opportunities.length === 0;
 
 const quick = [
   { href: "/explore/?qual=10th", label: "10th pass" },
@@ -65,6 +66,31 @@ const steps = [
   </section>
 
   {
+    empty && (
+      <section class="wrap pt-12" aria-labelledby="first-h">
+        <div class="card grid gap-3 p-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:gap-8">
+          <div>
+            <p class="eyebrow">Just launched</p>
+            <h2 id="first-h" class="mt-2 text-2xl">The first verified notices are being added</h2>
+            <p class="mt-2 text-ink-2">
+              We publish a notice only after a person has checked every date, age limit, qualification and fee against the official PDF.
+              The first ones appear here as soon as they pass that check.
+            </p>
+          </div>
+          <div class="text-sm text-ink-2">
+            <p class="font-semibold text-ink">Coming first</p>
+            <ul class="mt-2 list-disc space-y-1 pl-5">
+              <li>Central recruitment: SSC, UPSC, railways, banks, defence and paramilitary forces</li>
+              <li>North India: Uttar Pradesh, Rajasthan, Uttarakhand, Himachal Pradesh, Punjab, Haryana, Delhi, Chandigarh, Jammu and Kashmir, Ladakh</li>
+            </ul>
+            <a class="mt-3 inline-block" href="/about/#how-we-verify">How we check every notice</a>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  {
     soon.length > 0 && (
       <section class="wrap pt-12" aria-labelledby="soon-h">
         <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
@@ -92,7 +118,7 @@ const steps = [
     )
   }
 
-  <section class="wrap pt-12" aria-labelledby="updates-h">
+  <section class="wrap pt-12" aria-labelledby="updates-h" hidden={empty}>
     <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
       <h2 id="updates-h" class="section-title mb-0">Admit cards and results</h2>
       <span class="flex gap-4"><a href="/admit-cards/">Admit cards</a><a href="/results/">Results</a></span>

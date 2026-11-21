@@ -3,7 +3,7 @@
 //
 // Staging keeps the repository's sample notices until the first real notice is approved,
 // so the staging site is never empty. Production never falls back to sample data.
-import { appendFileSync, readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 
 const target = process.argv[2] ?? "staging";
 const base = process.env.API_BASE;
@@ -30,10 +30,10 @@ if (!res.ok) {
 }
 const snapshot = JSON.parse(text);
 if (!Array.isArray(snapshot.opportunities) || snapshot.opportunities.length === 0) {
-  if (target === "production" && process.env.GITHUB_ENV) {
-    // Nothing approved yet: skip this production build quietly instead of failing every night.
-    console.log("No approved notices on production yet. Skipping the build; the live site is unchanged.");
-    appendFileSync(process.env.GITHUB_ENV, "SKIP_DEPLOY=1" + String.fromCharCode(10));
+  if (target === "production") {
+    // Nothing approved yet: publish the real, empty site ("first notices are being added"), never samples.
+    writeFileSync(out, JSON.stringify({ ...snapshot, sample: false, opportunities: [] }, null, 2) + "\n");
+    console.log("No approved notices on production yet. Building the site with its empty state.");
     process.exit(0);
   }
   keepSample("No approved notices yet");
