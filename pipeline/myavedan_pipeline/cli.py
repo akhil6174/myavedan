@@ -299,6 +299,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(prog="myavedan-reader")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("models")
+    sub.add_parser("scheduled", help="run with settings from READER_* environment variables (used by the workflow)")
     g = sub.add_parser("golden")
     g.add_argument("--only", nargs="*", help="folders to process, e.g. ssc ibps")
     d = sub.add_parser("discover")
@@ -314,6 +315,15 @@ def main() -> int:
         for m in gemini.list_models(os.environ.get("GEMINI_API_KEY", "")):
             print(m)
         return 0
+    if args.cmd == "scheduled":
+        # Same command on Windows and Linux runners; the workflow passes its inputs as environment variables.
+        mode = os.environ.get("READER_MODE", "discover")
+        argv = [mode]
+        if mode == "discover":
+            argv += ["--max-new", os.environ.get("READER_MAX_NEW", "10"), "--from-backlog", os.environ.get("READER_FROM_BACKLOG", "0")]
+        if os.environ.get("READER_DRY_RUN", "false").lower() == "true":
+            argv.append("--dry-run")
+        args = parser.parse_args(argv)
     return cmd_discover(args) if args.cmd == "discover" else cmd_golden(args)
 
 

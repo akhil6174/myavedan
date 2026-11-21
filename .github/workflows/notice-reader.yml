@@ -1,13 +1,14 @@
 name: Notice reader
 
-# Runs on a computer in India (self-hosted runner labelled "india"), because many government
-# sites don't answer GitHub's US servers. See docs/PC_RUNNER.md.
+# Runs on a computer in India (self-hosted runner labelled "india"): the free Oracle Cloud server in
+# Mumbai/Hyderabad, or the owner's Windows PC as a backup. Many government sites don't answer
+# GitHub's US servers. See docs/ORACLE_SERVER.md and docs/PC_RUNNER.md.
 #
 # Safety: this workflow never runs for pull requests. It starts only on its schedule or when the
 # owner presses Run workflow.
 on:
   schedule:
-    # 11:00 and 19:00 IST. If the runner is offline, the run waits and then expires; nothing breaks.
+    # 11:00 and 19:00 IST. If no runner is online, the run waits and then expires; nothing breaks.
     - cron: "30 5 * * *"
     - cron: "30 13 * * *"
   workflow_dispatch:
@@ -45,24 +46,28 @@ jobs:
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       INGEST_URL: https://api-staging.myavedan.in/api/ingest
       INGEST_HMAC_SECRET: ${{ secrets.STAGING_INGEST_SECRET }}
-    defaults:
-      run:
-        shell: powershell
+      READER_MODE: ${{ github.event.inputs.mode || 'discover' }}
+      READER_MAX_NEW: ${{ github.event.inputs.max_new || '10' }}
+      READER_FROM_BACKLOG: ${{ github.event.inputs.from_backlog || '0' }}
+      READER_DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install reader packages
-        run: python -m pip install --quiet --disable-pip-version-check -r pipeline/requirements.txt
-
-      - name: Read notices
+      # Linux server: packages live in a virtual environment set up by deploy/oracle/setup-runner.sh.
+      - name: Read notices (Linux server)
+        if: runner.os == 'Linux'
         working-directory: pipeline
+        shell: bash
         run: |
-          $mode = "${{ github.event.inputs.mode }}"; if (-not $mode) { $mode = "discover" }
-          $cliArgs = @($mode)
-          if ($mode -eq "discover") {
-            $max = "${{ github.event.inputs.max_new }}"; if (-not $max) { $max = "10" }
-            $backlog = "${{ github.event.inputs.from_backlog }}"; if (-not $backlog) { $backlog = "0" }
-            $cliArgs += @("--max-new", $max, "--from-backlog", $backlog)
-          }
-          if ("${{ github.event.inputs.dry_run }}" -eq "true") { $cliArgs += "--dry-run" }
-          python -m myavedan_pipeline.cli @cliArgs
+          VENV="$HOME/.myavedan/venv"
+          [ -x "$VENV/bin/python" ] || python3 -m venv "$VENV"
+          "$VENV/bin/pip" install --quiet --disable-pip-version-check -r requirements.txt
+          "$VENV/bin/python" -m myavedan_pipeline.cli scheduled
+
+      - name: Read notices (Windows PC)
+        if: runner.os == 'Windows'
+        working-directory: pipeline
+        shell: powershell
+        run: |
+          python -m pip install --quiet --disable-pip-version-check -r requirements.txt
+          python -m myavedan_pipeline.cli scheduled
