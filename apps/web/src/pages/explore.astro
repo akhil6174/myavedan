@@ -102,8 +102,8 @@ const items = opportunities.map((o) => ({
       }
     </ul>
     <div id="empty" class="notice mt-4" hidden>
-      <p class="font-medium text-ink">No opportunities match these filters.</p>
-      <p class="mt-1">Try a shorter keyword, or set Status to “Everything” to include archived notices.</p>
+      <p class="font-medium text-ink">{items.length === 0 ? "The first verified notices are being added." : "No opportunities match these filters."}</p>
+      <p class="mt-1">{items.length === 0 ? "Each notice appears here once a person has checked it against the official PDF." : "Try a shorter keyword, or set Status to “Everything” to include archived notices."}</p>
     </div>
   </section>
 </Base>

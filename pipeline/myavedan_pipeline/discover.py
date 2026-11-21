@@ -37,13 +37,53 @@ KIND_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("apply_link", re.compile(r"apply online|online application|online registration|new registration|click here to apply|application portal|candidate login|apply now", re.I)),
     ("notice", re.compile(r"recruit|advt|advertisement|notification|vacanc|\bcen\b|employment notice|detailed notice|engagement|applications? (are )?invited|rozgar", re.I)),
 ]
-SKIP = re.compile(r"tender|auction|quotation|rti\b|annual report|budget|circular for staff|transfer|posting order|holiday", re.I)
+SKIP = re.compile(
+    r"tender|auction|quotation|rti\b|annual report|budget|circular for staff|transfer|posting order|holiday"
+    r"|syllabus|caution|fraud|fake|beware",
+    re.I,
+)
+
+
+# Links to list pages, not documents.
+INDEX_LINK = re.compile(r"\s*(view all|more|read more|click here|archives?|see all)\s*", re.I)
+
+
+def is_pdf(body: bytes) -> bool:
+    """Some government servers send a few blank bytes before the PDF header."""
+    return b"%PDF-" in body[:1024]
+
+
+_TOKEN = re.compile(r"[A-Za-z0-9_-]{20,}")
+
+
+def link_key(url: str, text: str, source_id: str) -> str:
+    """What identifies a document across visits. Most links are stable, but some sites (CISF's
+    file_open.php?fnm=...) issue a new random code on every visit: those are known by their title."""
+    query = urllib.parse.urlparse(url).query
+    if query and any(_TOKEN.fullmatch(v) for _, v in urllib.parse.parse_qsl(query)) and text.strip():
+        return f"title:{source_id}:{' '.join(text.lower().split())}"
+    return url
+
+
+def notice_score(text: str, url: str, year: str) -> int:
+    """How likely a backlog link is a current, readable notification (higher first)."""
+    hay = f"{text} {urllib.parse.unquote(url)}".lower()
+    score = 0
+    if ".pdf" in hay or "file_open" in hay or "attachment" in hay:
+        score += 3
+    if re.search(r"notification|advertisement|detailed|\bcen\b|employment notice", hay):
+        score += 2
+    if year in hay:
+        score += 2
+    if str(int(year) - 1) in hay:
+        score += 1
+    return score
 
 
 def classify(text: str, url: str) -> str | None:
     """Document kind for a link, or None if it doesn't look like a recruitment document."""
     hay = f"{text} {urllib.parse.unquote(url)}"
-    if SKIP.search(hay):
+    if SKIP.search(hay) or INDEX_LINK.fullmatch(text):
         return None
     for kind, pattern in KIND_PATTERNS:
         if pattern.search(hay):
@@ -202,6 +242,25 @@ class Candidate:
     url: str
     text: str
     kind: str
+    key: str = ""  # identity across visits (see link_key); defaults to the URL
+
+    def __post_init__(self) -> None:
+        self.key = self.key or self.url
+
+
+def find_notice_pdf(html: str, base_url: str, hosts: list[str]) -> str | None:
+    """A notice link sometimes opens a web page that holds the PDF: pick the PDF on that page."""
+    best, best_score = None, 0
+    for url, text in extract_links(html, base_url):
+        if not on_hosts(url, hosts):
+            continue
+        low = f"{text} {url}".lower()
+        if ".pdf" not in low and "file_open" not in low and "download" not in low:
+            continue
+        score = 1 + (2 if re.search(r"notification|advertisement|detailed", low) else 0) - (5 if SKIP.search(low) else 0)
+        if score > best_score:
+            best, best_score = url, score
+    return best
 
 
 def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) -> tuple[list[Candidate], dict]:
@@ -240,9 +299,10 @@ def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) 
         if not on_hosts(link, hosts):
             continue
         kind = classify(text, link)
-        pending = state.seen_urls.get(link, {}).get("status") == "link_pending"
-        if kind and (link not in state.seen_urls or pending):
-            found.append(Candidate(sid, link, text[:200], kind))
+        key = link_key(link, text, sid)
+        pending = state.seen_urls.get(key, {}).get("status") == "link_pending"
+        if kind and (key not in state.seen_urls or pending):
+            found.append(Candidate(sid, link, text[:200], kind, key))
     report.update(result="ok", links=len(links), recruitment_links=len(found), insecure_tls=page.insecure_tls)
     if len(links) < 5:
         report["note"] = "very few links: the page may be built by JavaScript and need a custom reader"

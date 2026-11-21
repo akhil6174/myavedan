@@ -44,3 +44,42 @@ def test_classify_apply_links():
     assert classify("Click here to apply for CRP PO/MT-XVI", "/apply") == "apply_link"
     # A notice that mentions online applications is still the notice, if its text says so first
     assert classify("Detailed Notification CRP PO/MT-XVI", "/Detailed-Notification.pdf") == "notice"
+
+
+def test_pdf_header_may_follow_blank_bytes():
+    from myavedan_pipeline.discover import is_pdf
+
+    assert is_pdf(b"\r\n%PDF-1.7\n...")  # CISF
+    assert is_pdf(b"%PDF-1.4")
+    assert not is_pdf(b"<!DOCTYPE html><html>")
+
+
+def test_links_with_changing_codes_are_known_by_title():
+    from myavedan_pipeline.discover import link_key
+
+    a = link_key("https://cisfrectt.cisf.gov.in/file_open.php?fnm=940kRXsCewjve6T79kzFU82JNmHWQYm2", "Corrigendum dated 09.06.2026", "cisf")
+    b = link_key("https://cisfrectt.cisf.gov.in/file_open.php?fnm=kJa1LkykUlILSnbhFueGC3lSC1T7n1pw", "Corrigendum  dated 09.06.2026", "cisf")
+    assert a == b == "title:cisf:corrigendum dated 09.06.2026"
+    assert link_key("https://upsc.gov.in/notice.pdf?id=12", "Notice", "upsc") == "https://upsc.gov.in/notice.pdf?id=12"
+
+
+def test_backlog_prefers_current_notification_pdfs():
+    from myavedan_pipeline.discover import notice_score
+
+    good = notice_score("Detailed Notification CEN 08/2026", "https://rrb.gov.in/CEN_08_2026.pdf", "2026")
+    page = notice_score("Recruitment", "https://ibps.in/index.php/recruitment", "2026")
+    old = notice_score("Advertisement 2019", "https://x.gov.in/advt2019.pdf", "2026")
+    assert good > old > page
+
+
+def test_skips_syllabus_and_fraud_warnings_and_index_links():
+    assert classify("Recruitment of Paramedical Staff: Syllabus for Written Exam", "/f.pdf") is None
+    assert classify("Notice for caution regarding fraudulent recruitment", "/f.pdf") is None
+    assert classify("View All", "/index.php/recruitment") is None
+
+
+def test_follow_a_page_to_its_notice_pdf():
+    from myavedan_pipeline.discover import find_notice_pdf
+
+    html = '<a href="/x/apply">Apply</a><a href="/docs/Detailed_Notification.pdf">Detailed Notification</a><a href="/docs/syllabus.pdf">Syllabus</a><a href="https://other.com/a.pdf">a</a>'
+    assert find_notice_pdf(html, "https://ibpsreg.ibps.in/manit/", ["ibps.in"]) == "https://ibpsreg.ibps.in/docs/Detailed_Notification.pdf"
