@@ -68,12 +68,14 @@ From now on the runner starts minimised every time you log in. This is simpler t
 
 On GitHub, **Settings → Actions → Runners** should show `myavedan-pc` as **Idle** (green).
 
-### 4. Gemini key on the PC (for testing)
-So the reader can be tested here as well as through GitHub, put the key in a local file that is never committed:
+### 4. Gemini key on the PC
+The runner works in its own copy of the repo (`C:\actions-runner\_work\...`), cleaned every run, so it can't see `pipeline\.env`. It reads the key from `%USERPROFILE%\.myavedan\.env`, next to the reader's state:
 
-1. In the project folder, create `pipeline\.env` (Notepad → Save as → "All files").
+1. Create `%USERPROFILE%\.myavedan\.env` (Notepad → Save as → "All files").
 2. One line: `GEMINI_API_KEY=your-key`
-3. Save. `.gitignore` already excludes `.env` files.
+3. Save. The file is outside the repo and is never committed.
+
+For running the reader by hand from the project folder, `pipeline\.env` also works (`.gitignore` excludes it). If neither has a key, the run stops at once with a message saying where to put it.
 
 ## How it runs
 
