@@ -44,8 +44,9 @@ jobs:
     env:
       PYTHONUTF8: "1"
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-      INGEST_URL: https://api-staging.myavedan.in/api/ingest
-      INGEST_HMAC_SECRET: ${{ secrets.STAGING_INGEST_SECRET }}
+      # Production: approved notices go live on myavedan.in. (Staging: api-staging + STAGING_INGEST_SECRET.)
+      INGEST_URL: https://api.myavedan.in/api/ingest
+      INGEST_HMAC_SECRET: ${{ secrets.PRODUCTION_INGEST_SECRET }}
       READER_MODE: ${{ github.event.inputs.mode || 'discover' }}
       READER_MAX_NEW: ${{ github.event.inputs.max_new || '10' }}
       READER_FROM_BACKLOG: ${{ github.event.inputs.from_backlog || '0' }}
