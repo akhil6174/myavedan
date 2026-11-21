@@ -14,11 +14,11 @@ on:
       environment:
         description: Which site to rebuild
         type: choice
-        options: [staging, production]
-        default: staging
+        options: [production, staging]
+        default: production
 
 concurrency:
-  group: publish-${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+  group: publish-${{ github.event.client_payload.environment || github.event.inputs.environment || 'production' }}
   cancel-in-progress: false
 
 permissions:
@@ -28,12 +28,12 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+    environment: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'production' }}
     env:
-      TARGET: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'staging' }}
+      TARGET: ${{ github.event.client_payload.environment || github.event.inputs.environment || 'production' }}
       BATCH_ID: ${{ github.event.client_payload.batch_id || '' }}
-      API_BASE: ${{ (github.event.client_payload.environment || github.event.inputs.environment) == 'production' && 'https://api.myavedan.in' || 'https://api-staging.myavedan.in' }}
-      PUBLISH_TOKEN: ${{ (github.event.client_payload.environment || github.event.inputs.environment) == 'production' && secrets.PRODUCTION_PUBLISH_TOKEN || secrets.STAGING_PUBLISH_TOKEN }}
+      API_BASE: ${{ (github.event.client_payload.environment || github.event.inputs.environment || 'production') == 'production' && 'https://api.myavedan.in' || 'https://api-staging.myavedan.in' }}
+      PUBLISH_TOKEN: ${{ (github.event.client_payload.environment || github.event.inputs.environment || 'production') == 'production' && secrets.PRODUCTION_PUBLISH_TOKEN || secrets.STAGING_PUBLISH_TOKEN }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       WRANGLER_SEND_METRICS: "false"
@@ -49,17 +49,20 @@ jobs:
         run: node scripts/fetch-snapshot.mjs "$TARGET"
 
       - name: Validate snapshot
+        if: env.SKIP_DEPLOY != '1'
         run: npm run validate:snapshot
 
       - name: Build site
+        if: env.SKIP_DEPLOY != '1'
         run: npm run build
 
       - name: Deploy site
+        if: env.SKIP_DEPLOY != '1'
         working-directory: apps/web
         run: npx wrangler deploy --env "$TARGET"
 
       - name: Tell the API the batch is live
-        if: env.PUBLISH_TOKEN != ''
+        if: env.PUBLISH_TOKEN != '' && env.SKIP_DEPLOY != '1'
         run: |
           curl -sf -X POST "$API_BASE/api/publish/complete" \
             -H "Authorization: Bearer $PUBLISH_TOKEN" -H "Content-Type: application/json" \

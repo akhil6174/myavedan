@@ -1,5 +1,7 @@
 # Publishing
 
+**Production is the default** (since 21 Nov 2026): the reader sends to `api.myavedan.in`, reviewers work at `admin.myavedan.in`, and approvals publish `myavedan.in`. Staging (`*-staging.myavedan.in`) stays for testing changes. Until the first notice is approved on production, production builds are skipped (the site stays offline) instead of failing.
+
 How an approved notice reaches the public site.
 
 ```
@@ -31,6 +33,9 @@ reviewer approves ──► publish_queue ──► API (cron every 30 min, or a
 | Cloudflare Worker (staging) | `PUBLISH_TOKEN` | Password for downloading approved notices. Already set. |
 | GitHub → Actions secrets | `STAGING_PUBLISH_TOKEN` | **The same value** as the Worker's `PUBLISH_TOKEN`. |
 | Cloudflare Worker (staging) | `GITHUB_DISPATCH_TOKEN` | GitHub token that lets the API start the Publish workflow. |
+| Cloudflare Worker (production) | `PUBLISH_TOKEN`, `INGEST_HMAC_SECRET`, `BETTER_AUTH_SECRET`, `IP_HASH_SALT` | Set 21 Nov 2026. |
+| Cloudflare Worker (production) | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `ADMIN_EMAILS`, `GITHUB_DISPATCH_TOKEN` | Set by the owner (`--env production`). |
+| GitHub → Actions secrets | `PRODUCTION_PUBLISH_TOKEN`, `PRODUCTION_INGEST_SECRET` | The same values as the production Worker's `PUBLISH_TOKEN` and `INGEST_HMAC_SECRET`. |
 
 ### Create `GITHUB_DISPATCH_TOKEN`
 1. GitHub → your profile picture → **Settings** → **Developer settings** → **Personal access tokens** → **Fine-grained tokens** → **Generate new token**.
