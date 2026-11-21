@@ -41,13 +41,16 @@ UTS = {"delhi", "chandigarh", "jammu-kashmir", "ladakh"}
 
 
 def load_env() -> None:
-    env = ROOT / ".env"
-    if env.exists():
+    """pipeline/.env, then ~/.myavedan/.env (next to the reader state). The second one is what the PC
+    runner uses: its checkout is a separate copy of the repo that has no .env, and is cleaned each run."""
+    for env in (ROOT / ".env", state_path().parent / ".env"):
+        if not env.exists():
+            continue
         for line in env.read_text(encoding="utf-8").splitlines():
             if "=" in line and not line.lstrip().startswith("#"):
                 k, v = line.split("=", 1)
                 if v.strip() and not os.environ.get(k.strip()):
-                    os.environ[k.strip()] = v.strip()
+                    os.environ[k.strip()] = v.strip().strip('"')
 
 
 def host(url: str) -> str:
@@ -190,6 +193,9 @@ def state_path() -> Path:
 
 
 def cmd_discover(args: argparse.Namespace) -> int:
+    if (args.max_new or args.from_backlog) and not os.environ.get("GEMINI_API_KEY"):
+        print(json.dumps({"error": f"GEMINI_API_KEY is not set. Put it in {state_path().parent / '.env'} on the PC that runs the reader."}))
+        return 1
     sources = [s for s in load_sources().values() if s.get("approved_by_owner") and (not args.sources or s["id"] in args.sources)]
     state = State.load(state_path())
     fetcher = Fetcher()
