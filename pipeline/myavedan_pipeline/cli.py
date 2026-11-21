@@ -37,6 +37,7 @@ STATE_NAMES = {
     "uttar-pradesh": "Uttar Pradesh", "uttarakhand": "Uttarakhand", "himachal-pradesh": "Himachal Pradesh", "punjab": "Punjab",
     "haryana": "Haryana", "delhi": "Delhi", "chandigarh": "Chandigarh", "jammu-kashmir": "Jammu and Kashmir", "ladakh": "Ladakh", "rajasthan": "Rajasthan",
 }
+KINDS = {"notice", "corrigendum", "admit_card", "answer_key", "result", "cutoff", "other"}
 UTS = {"delhi", "chandigarh", "jammu-kashmir", "ladakh"}
 
 
@@ -99,6 +100,11 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
+    read_kind = extraction.get("document_kind")
+    if read_kind in KINDS and read_kind != kind:
+        flags.append({"field": "document_kind", "code": "kind_from_content", "severity": "warning",
+                      "message": f"The link looked like a '{kind}', but the document reads as a '{read_kind}'. Filed as '{read_kind}'."})
+        kind = read_kind
     if usage.get("lite"):
         flags.append({"field": "posts", "code": "lite_model", "severity": "warning",
                       "message": "Read by the lite model because Google's main models were busy. It can miss posts: check the vacancy table in the PDF."})
