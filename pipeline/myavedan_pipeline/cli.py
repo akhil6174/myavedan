@@ -303,6 +303,7 @@ def _download_notice(fetcher: Fetcher, c: Candidate, source: dict):
 def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse.Namespace, now: str) -> dict:
     day = datetime.now(IST).date().isoformat()
     state.usage[day] = state.usage.get(day, 0) + 1  # count the attempt: failures use quota too
+    state.save()
     try:
         result = _process_candidate(c, got, source, args)
     except gemini.GeminiError as e:
@@ -311,6 +312,7 @@ def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse
             return {"pdf": c.url, "deferred": "Gemini busy, will retry next run"}
         raise
     state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
+    state.save()  # after every notice, so an interrupted run keeps what it already sent
     return result
 
 
