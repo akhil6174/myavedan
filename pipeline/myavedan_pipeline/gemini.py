@@ -19,6 +19,9 @@ API = "https://generativelanguage.googleapis.com/v1beta"
 # Measured on the 5 test notices (20 Nov 2026): the lite model was ~25x faster but missed 4 of
 # UPPSC's 12 posts, so the full model is the default. It takes ~4-6 min per long notice on the free tier.
 DEFAULT_MODEL = "gemini-3.8-flash"
+# When Google reports the default as overloaded (503), try these in order. Lite is the last resort
+# and its drafts are flagged, because it missed posts in testing.
+FALLBACK_MODELS = ["gemini-3.7-flash", "gemini-3.6-flash"]
 LITE_MODEL = "gemini-3.5-flash-lite"
 
 DATE_KINDS = ["notification", "apply_start", "apply_end", "fee_end", "correction_start", "correction_end", "exam", "admit_card", "result"]
@@ -237,5 +240,32 @@ def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | N
                 raise GeminiError(f"quota exhausted: {e}") from e
             if any(f"Gemini API {code}" in str(e) for code in (400, 401, 403, 404)):
                 raise  # a request that can't succeed on retry
-            time.sleep(5 * (attempt + 1))
+            busy = is_busy(e)
+            if attempt < retries:
+                time.sleep((20 if busy else 5) * (attempt + 1))
     raise GeminiError(f"extraction failed after {retries + 1} attempts: {last}")
+
+
+def is_busy(error: Exception) -> bool:
+    """Google is overloaded or out of quota: worth trying later, not a fault in the notice."""
+    text = str(error)
+    return any(marker in text for marker in ("Gemini API 503", "UNAVAILABLE", "high demand", "Gemini API 429", "RESOURCE_EXHAUSTED", "quota exhausted", "did not answer in time"))
+
+
+def extract_resilient(pages: list[tuple[int, str]], model: str | None = None) -> tuple[dict, dict]:
+    """The default model, then newer-to-older fallbacks if Google says it's overloaded, then lite."""
+    if model:
+        return extract(pages, model=model)
+    chain = [os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL, *FALLBACK_MODELS, LITE_MODEL]
+    last: Exception | None = None
+    for i, m in enumerate(chain):
+        try:
+            ex, usage = extract(pages, model=m, retries=1 if i < len(chain) - 1 else 2)
+            if i:
+                usage = {**usage, "fallback_from": chain[0], "lite": m == LITE_MODEL}
+            return ex, usage
+        except GeminiError as e:
+            last = e
+            if not is_busy(e):
+                raise
+    raise GeminiError(f"all models busy, will retry next run: {last}")

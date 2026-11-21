@@ -93,9 +93,12 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     org = organization_for(source, document_url)
     hosts = sorted({host(source["url"]), host(document_url)})
 
-    extraction, usage = gemini.extract(compact_pages(readable), model=model)
+    extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
+    if usage.get("lite"):
+        flags.append({"field": "posts", "code": "lite_model", "severity": "warning",
+                      "message": "Read by the lite model because Google's main models were busy. It can miss posts: check the vacancy table in the PDF."})
     if insecure_tls:
         flags.append({"field": "links.notice_pdf", "code": "insecure_tls", "severity": "warning",
                       "message": "The official site's security certificate couldn't be verified when downloading. Open the notice from the official site yourself to confirm it is genuine."})
@@ -135,6 +138,7 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
         "tokens_in": usage.get("promptTokenCount"),
         "tokens_out": usage.get("candidatesTokenCount"),
         "model": usage.get("model"),
+        "fallback_from": usage.get("fallback_from"),
         "seconds": round(time.time() - started, 1),
         "saved": str(out_dir.relative_to(ROOT)),
     }
@@ -293,9 +297,19 @@ def _download_notice(fetcher: Fetcher, c: Candidate, source: dict):
 def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse.Namespace, now: str) -> dict:
     day = datetime.now(IST).date().isoformat()
     state.usage[day] = state.usage.get(day, 0) + 1  # count the attempt: failures use quota too
-    result = process_bytes(got.body, c.url, source=source, document_url=got.url, dry_run=args.dry_run, model=args.model, kind=c.kind, insecure_tls=got.insecure_tls)
+    try:
+        result = _process_candidate(c, got, source, args)
+    except gemini.GeminiError as e:
+        if gemini.is_busy(e):
+            # Google was busy: leave the notice unread so the next run tries it again. Not a failure.
+            return {"pdf": c.url, "deferred": "Gemini busy, will retry next run"}
+        raise
     state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
     return result
+
+
+def _process_candidate(c: Candidate, got, source: dict, args: argparse.Namespace) -> dict:
+    return process_bytes(got.body, c.url, source=source, document_url=got.url, dry_run=args.dry_run, model=args.model, kind=c.kind, insecure_tls=got.insecure_tls)
 
 
 def send_links(found: list[tuple[dict, Candidate]], dry_run: bool) -> bool:
