@@ -29,31 +29,7 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #1b1b22;
-    --surface: #24242d;
-    --sunk: #2d2d38;
-    --ink: #ececf2;
-    --ink-2: #c0c1cf;
-    --ink-3: #9a9caf;
-    --line: #363643;
-    --line-2: #50505f;
-    --brand: #8585ff;
-    --brand-ink: #b3b3ff;
-    --brand-soft: #2d2d55;
-    --accent: #fec79a;
-    --accent-soft: #3d2f22;
-    --ok: #63d197;
-    --ok-soft: #163327;
-    --warn: #fec79a;
-    --warn-soft: #3d2f22;
-    --bad: #f2887f;
-    --bad-soft: #3c1d1b;
-    --on-brand: #15153a;
-    color-scheme: dark;
-  }
-}
+/* One look for everyone: the light grey palette, whatever the device's dark-mode setting. */
 
 @theme inline {
   --color-paper: var(--paper);
