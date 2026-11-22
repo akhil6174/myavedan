@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import looks_outdated, read_priority, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
+from .discover import looks_outdated, read_priority, take_turns, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
 from .normalise import page_text
@@ -316,13 +316,13 @@ def cmd_discover(args: argparse.Namespace) -> int:
 
     # Backlog: the most likely current notification PDFs first.
     year = today[:4]
-    backlog = sorted(
-        (
+    backlog = take_turns(
+        [
             Candidate(v["source"], v.get("url", key), v.get("text", ""), v["kind"], key)
             for key, v in state.seen_urls.items()
             if v.get("status") == "backlog" and v.get("kind") != "apply_link" and (not args.sources or v["source"] in args.sources)
             and not looks_outdated(v.get("text", ""), v.get("url", key), today)
-        ),
+        ],
         key=lambda c: read_priority(c, today, from_backlog=True),
     )
     todo.sort(key=lambda c: read_priority(c, today))

@@ -98,6 +98,21 @@ def read_priority(c: "Candidate", today: str, from_backlog: bool = False) -> tup
     return (group, age, -notice_score(c.text, c.url, today[:4]))
 
 
+def take_turns(cands: list["Candidate"], key) -> list["Candidate"]:
+    """Every site gets a turn: the best item of each site first, then each site's second best, and so
+    on. Without this, one site whose file names carry dates fills every run."""
+    by_site: dict[str, list["Candidate"]] = {}
+    for c in sorted(cands, key=key):
+        by_site.setdefault(c.source_id, []).append(c)
+    queues = sorted(by_site.values(), key=lambda q: key(q[0]))
+    out: list["Candidate"] = []
+    while queues:
+        for q in queues:
+            out.append(q.pop(0))
+        queues = [q for q in queues if q]
+    return out
+
+
 def notice_score(text: str, url: str, year: str) -> int:
     """How likely a backlog link is a current, readable notification (higher first)."""
     hay = f"{text} {urllib.parse.unquote(url)}".lower()
