@@ -7,7 +7,7 @@ interface Props {
   pdf: string;
 }
 const { ev, pdf } = Astro.props;
-const label = ev ? `p. ${ev.page}${ev.section ? ` §${ev.section}` : ""}` : "";
+const label = ev ? `Page ${ev.page}` : "";
 ---
 
 {

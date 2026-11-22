@@ -58,7 +58,7 @@ const steps = [
         <ul class="mt-2 space-y-1.5 text-ink-2">
           <li>Only official recruitment websites are used as sources.</li>
           <li>A person compares every date, fee and rule with the notice before it goes live.</li>
-          <li>Each fact shows the page it came from, like <span class="ev">p. 4 §5.1</span></li>
+          <li>Each fact shows the page it came from, like <span class="ev">Page 4</span></li>
         </ul>
         <a class="mt-3 inline-block" href="/about/#how-we-verify">How we verify notices</a>
       </aside>
@@ -132,7 +132,7 @@ const steps = [
       {
         steps.map((s, i) => (
           <li class="card">
-            <span class="font-mono text-sm text-brand">{i + 1}</span>
+            <span class="grid h-7 w-7 place-items-center rounded-full bg-accent text-sm font-bold text-ink">{i + 1}</span>
             <p class="mt-1 font-display text-lg font-bold" style="font-stretch: 88%">
               {s.t}
             </p>

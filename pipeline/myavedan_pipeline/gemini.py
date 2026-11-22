@@ -44,6 +44,8 @@ def _cite() -> dict:
 SCHEMA: dict[str, Any] = {
     "type": "OBJECT",
     "properties": {
+        "document_kind": {"type": "STRING", "enum": ["notice", "corrigendum", "admit_card", "answer_key", "result", "cutoff", "other"],
+                          "description": "What this document is. notice = invites applications for posts. result = lists selected/qualified candidates, merit list, or marks. admit_card = admit card / exam city / call letter release. answer_key = answer key or objections. cutoff = cut-off marks. corrigendum = changes an earlier notice (dates, posts). other = anything else."},
         "title": _s("Short title of the recruitment, e.g. 'Stenographer Grade C and D Examination 2026'"),
         "organization_name": _s("Recruiting organisation as written in the notice"),
         "advt_no": _s("Advertisement / notice number, else empty"),
@@ -143,7 +145,7 @@ SCHEMA: dict[str, Any] = {
         "selection_stages": {"type": "ARRAY", "items": {"type": "STRING"}},
         "documents_required": {"type": "ARRAY", "items": {"type": "STRING"}},
     },
-    "required": ["title", "organization_name", "advt_no", "summary_en", "total_vacancies", "apply_url", "dates", "posts", "fees", "selection_stages", "documents_required"],
+    "required": ["document_kind", "title", "organization_name", "advt_no", "summary_en", "total_vacancies", "apply_url", "dates", "posts", "fees", "selection_stages", "documents_required"],
 }
 
 INSTRUCTIONS = """You extract facts from an official Indian government recruitment notice for MyAvedan, a site that shows applicants the exact rules.

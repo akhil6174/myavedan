@@ -165,7 +165,8 @@ export const api = {
   field: (id: string, body: { key: string; action: "approve" | "edit" | "reject"; value?: unknown; reason?: string }) =>
     call<{ ok: true }>(`/versions/${id}/fields`, { method: "POST", body }),
   bulk: (id: string, keys: string[]) => call<{ ok: true }>(`/versions/${id}/bulk`, { method: "POST", body: { keys } }),
-  decide: (id: string, body: { action: "approve" | "reject" | "reprocess"; reason?: string; urgent?: boolean; change_note?: string }) =>
+  setKind: (id: string, kind: string) => call<{ ok: true; kind: string }>(`/versions/${id}/kind`, { method: "POST", body: { kind } }),
+  decide: (id: string, body: { action: "approve" | "reject" | "reprocess" | "attach"; reason?: string; urgent?: boolean; change_note?: string; opportunity_id?: string; date?: string }) =>
     call<{ ok: true; state: string; opportunity?: { slug: string } }>(`/versions/${id}/decision`, { method: "POST", body }),
   corrections: (status = "open") => call<{ items: Correction[] }>(`/corrections?status=${status}`),
   resolve: (id: string, status: "confirmed" | "not_an_error" | "fixed") => call<{ ok: true }>(`/corrections/${id}`, { method: "POST", body: { status } }),

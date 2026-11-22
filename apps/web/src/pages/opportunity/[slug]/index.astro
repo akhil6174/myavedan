@@ -71,12 +71,12 @@ const jump = [
         </nav>
         <div class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
           <StatusPill o={o} />
-          {o.advt_no && <span class="font-mono text-sm text-ink-3">Advt. No. {o.advt_no}</span>}
+          {o.advt_no && <span class="text-sm text-ink-3">Advt. No. {o.advt_no}</span>}
           {o.sample && <span class="rounded bg-warn-soft px-1.5 py-0.5 text-xs font-semibold text-warn">Sample, not a real notice</span>}
         </div>
         <h1 class="mt-3 text-3xl sm:text-4xl" data-pagefind-meta="title">{o.title}</h1>
         <p class="mt-2 text-ink-2">
-          {o.organization.name} · {jurisdictionLabel(o)} · official site <span class="font-mono text-sm">{o.organization.domain}</span>
+          {o.organization.name} · {jurisdictionLabel(o)} · official site <span class="text-sm">{o.organization.domain}</span>
         </p>
 
         <dl class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -263,7 +263,7 @@ const jump = [
               <ol class="grid gap-2">
                 {o.selection_stages.map((s, i) => (
                   <li class="flex items-start gap-3">
-                    <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-soft font-mono text-xs text-brand-ink">{i + 1}</span>
+                    <span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-soft text-xs text-brand-ink">{i + 1}</span>
                     <span>{s}</span>
                   </li>
                 ))}
@@ -301,7 +301,7 @@ const jump = [
                 {events.map((e) => (
                   <li>
                     <span class="absolute -left-[0.4rem] mt-1.5 h-3 w-3 rounded-full border-2 border-surface bg-brand" aria-hidden="true" />
-                    <p class="num font-mono text-xs text-ink-3">{formatDate(e.date)}</p>
+                    <p class="num text-xs text-ink-3">{formatDate(e.date)}</p>
                     <p class="font-medium">
                       <span class="mr-2 rounded bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-brand-ink">{EVENT_LABEL[e.kind]}</span>
                       {e.title}
@@ -319,20 +319,11 @@ const jump = [
 
       <aside id="sources" aria-labelledby="src-h" class="lg:sticky lg:top-4 lg:self-start">
         <div class="card text-sm">
-          <h2 id="src-h" class="text-lg">Sources and checks</h2>
+          <h2 id="src-h" class="text-lg">Official source</h2>
           <dl class="mt-3 grid gap-2.5">
-            <div><dt class="text-xs text-ink-3">Official site</dt><dd class="font-mono">{o.organization.domain}</dd></div>
-            <div><dt class="text-xs text-ink-3">Notice retrieved</dt><dd class="num">{formatDateTime(o.provenance.retrieved_at)}</dd></div>
-            <div><dt class="text-xs text-ink-3">Reviewed by a person</dt><dd class="num">{formatDateTime(o.provenance.reviewed_at)}</dd></div>
-            <div><dt class="text-xs text-ink-3">Source last checked</dt><dd class="num">{formatDateTime(o.provenance.last_checked_at)}</dd></div>
-            <div>
-              <dt class="text-xs text-ink-3">Version</dt>
-              <dd>{o.provenance.version}{o.provenance.change_note && <span class="block text-ink-2">{o.provenance.change_note}</span>}</dd>
-            </div>
-            <div>
-              <dt class="text-xs text-ink-3">File fingerprint</dt>
-              <dd class="font-mono text-xs break-all text-ink-2" title="SHA-256 of the notice file we reviewed">{o.provenance.sha256.slice(0, 16)}…</dd>
-            </div>
+            <div><dt class="text-xs text-ink-3">Official site</dt><dd>{o.organization.domain}</dd></div>
+            <div><dt class="text-xs text-ink-3">Checked by a person on</dt><dd class="num">{formatDateTime(o.provenance.reviewed_at)}</dd></div>
+            {o.provenance.change_note && <div><dt class="text-xs text-ink-3">Latest change</dt><dd>{o.provenance.change_note}</dd></div>}
           </dl>
           <div class="mt-4 grid gap-2">
             <a class="btn justify-center" href={pdf} target="_blank" rel="noopener">Official notice (PDF) <span aria-hidden="true">↗</span></a>

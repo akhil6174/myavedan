@@ -242,7 +242,53 @@ function FieldCard({
 
 // ------------------------------------------------------------------ decision bar
 
-function DecisionBar({ detail, id, onDone }: { detail: VersionDetail; id: string; onDone: (msg: string) => void }) {
+export const KIND_OPTIONS: [string, string][] = [
+  ["notice", "New recruitment (opening)"],
+  ["result", "Result / selection list"],
+  ["admit_card", "Admit card"],
+  ["answer_key", "Answer key"],
+  ["cutoff", "Cut-off marks"],
+  ["corrigendum", "Corrigendum / date change"],
+  ["other", "Other (not for the site)"],
+];
+const UPDATE_KINDS = ["result", "admit_card", "answer_key", "cutoff", "corrigendum"];
+
+type Opp = { id: string; slug: string; title: string; advt_no: string | null; organization: string | null };
+
+function DecisionBar({ detail, id, onDone, onKind }: { detail: VersionDetail; id: string; onDone: (msg: string) => void; onKind: () => void }) {
+  const kind = detail.version.document_kind;
+  const isUpdate = UPDATE_KINDS.includes(kind);
+  const [opps, setOpps] = useState<Opp[] | null>(null);
+  const [parent, setParent] = useState("");
+  const [q, setQ] = useState("");
+  useEffect(() => {
+    if (isUpdate && opps === null) api.opportunities().then((r) => setOpps(r.items)).catch(() => setOpps([]));
+  }, [isUpdate]);
+  const matches = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    return (opps ?? []).filter((o) => !t || `${o.title} ${o.advt_no ?? ""} ${o.organization ?? ""}`.toLowerCase().includes(t)).slice(0, 50);
+  }, [opps, q]);
+  async function changeKind(next: string) {
+    setErr(null);
+    try {
+      await api.setKind(id, next);
+      onKind();
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Could not change the type.");
+    }
+  }
+  async function attach() {
+    setBusy(true);
+    setErr(null);
+    try {
+      const r = await api.decide(id, { action: "attach", opportunity_id: parent, urgent });
+      onDone(`Attached. It shows on the recruitment page at the next publish: ${SITE_URL}/opportunity/${r.opportunity?.slug}/`);
+    } catch (e) {
+      setErr(e instanceof ApiError ? e.message : "Could not save. Try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
   const [reason, setReason] = useState("");
   const [note, setNote] = useState("");
   const [urgent, setUrgent] = useState(false);
@@ -281,6 +327,22 @@ function DecisionBar({ detail, id, onDone }: { detail: VersionDetail; id: string
     <div class="sticky bottom-0 z-10 border-t border-line-2 bg-surface/95 backdrop-blur">
       <div class="mx-auto grid max-w-[96rem] gap-3 px-4 py-3 2xl:grid-cols-[minmax(0,1fr)_auto] 2xl:items-center">
         <div class="text-sm">
+          <label class="mb-1 flex flex-wrap items-center gap-2">
+            <span class="font-semibold">This document is:</span>
+            <select class="field w-64 py-1 text-sm" value={kind} onChange={(e) => changeKind((e.target as HTMLSelectElement).value)} aria-label="Document type">
+              {KIND_OPTIONS.map(([k, label]) => (
+                <option key={k} value={k}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </label>
+          {isUpdate ? (
+            <p class="text-ink-3">An update, not a new opening: choose the recruitment it belongs to. It appears on that page and in Results / Admit cards.</p>
+          ) : kind === "other" ? (
+            <p class="text-ink-3">Not published on the site. Reject it, or change the type.</p>
+          ) : (
+          <>
           <p class="font-semibold">
             {checked} of {critical.length} critical fields checked
             {a.rejected.length > 0 && <span class="text-bad"> · {a.rejected.length} rejected</span>}
@@ -289,6 +351,8 @@ function DecisionBar({ detail, id, onDone }: { detail: VersionDetail; id: string
           <p class="text-ink-3">
             {a.ok ? "Ready to approve." : "Approve or edit every critical field to enable publishing. Reject sends nothing live."}
           </p>
+          </>
+          )}
           {err && (
             <p class="mt-1 text-bad" role="alert">
               {err}
@@ -313,9 +377,27 @@ function DecisionBar({ detail, id, onDone }: { detail: VersionDetail; id: string
           <label class="flex items-center gap-1.5 text-sm">
             <input type="checkbox" checked={urgent} onChange={(e) => setUrgent((e.target as HTMLInputElement).checked)} /> Urgent
           </label>
-          <button type="button" class="btn btn-primary" disabled={!a.ok || busy} onClick={() => decide("approve")}>
-            Approve and publish
-          </button>
+          {isUpdate ? (
+            <>
+              <input class="field w-44 py-1.5 text-sm" placeholder="Search recruitments" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Search recruitments" />
+              <select class="field w-72 py-1.5 text-sm" value={parent} onChange={(e) => setParent((e.target as HTMLSelectElement).value)} aria-label="Recruitment">
+                <option value="">{opps === null ? "Loading…" : opps.length ? "Choose the recruitment…" : "No published recruitments yet"}</option>
+                {matches.map((o) => (
+                  <option key={o.id} value={o.id}>
+                    {o.title}
+                    {o.advt_no ? ` (${o.advt_no})` : ""}
+                  </option>
+                ))}
+              </select>
+              <button type="button" class="btn btn-primary" disabled={!parent || busy} onClick={attach}>
+                Attach and publish
+              </button>
+            </>
+          ) : (
+            <button type="button" class="btn btn-primary" disabled={!a.ok || busy || kind === "other"} onClick={() => decide("approve")}>
+              Approve and publish
+            </button>
+          )}
           <input
             class="field w-48 py-1.5 text-sm"
             placeholder="Reason to reject or redo"
@@ -450,7 +532,7 @@ export function Review({ id }: { id: string }) {
         </div>
       </div>
 
-      {v.reviewable && !done && <DecisionBar detail={detail} id={id} onDone={(m) => (setDone(m), void load())} />}
+      {v.reviewable && !done && <DecisionBar detail={detail} id={id} onDone={(m) => (setDone(m), void load())} onKind={() => void load()} />}
     </div>
   );
 }

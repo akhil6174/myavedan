@@ -18,7 +18,7 @@
 import type { Env } from "./env";
 import { reviewerFor } from "./access";
 import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
-import { bulkApprove, corrections, decision, fieldDecision, queue, setRole, updateCorrection, users, version } from "./admin";
+import { bulkApprove, corrections, decision, fieldDecision, queue, setKind, setRole, updateCorrection, users, version } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, knownHashes, snapshot } from "./routes";
 import { publishComplete, publishStatus, runPublishTrigger } from "./publish";
@@ -64,12 +64,13 @@ async function admin(request: Request, env: Env, ctx: ExecutionContext, path: st
   if (path === "/api/admin/publish" && method === "GET") return publishStatus(env);
   if (path === "/api/admin/publish" && method === "POST") return json(await runPublishTrigger(env, { force: true }));
 
-  m = path.match(/^\/api\/admin\/versions\/([\w-]+)(?:\/(fields|bulk|decision))?$/);
+  m = path.match(/^\/api\/admin\/versions\/([\w-]+)(?:\/(fields|bulk|decision|kind))?$/);
   if (m) {
     const [, id, sub] = m as unknown as [string, string, string | undefined];
     if (!sub && method === "GET") return version(env, id);
     if (sub === "fields" && method === "POST") return fieldDecision(request, env, id, reviewer);
     if (sub === "bulk" && method === "POST") return bulkApprove(request, env, id, reviewer);
+    if (sub === "kind" && method === "POST") return setKind(request, env, id, reviewer);
     if (sub === "decision" && method === "POST") {
       // An urgent approval publishes now instead of waiting for the next cron run.
       return decision(request, env, id, reviewer, (urgent) => {
