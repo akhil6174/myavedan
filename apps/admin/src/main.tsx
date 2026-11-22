@@ -7,9 +7,10 @@ import { Review } from "./Review";
 import { Corrections } from "./Corrections";
 import { Reviewers } from "./Reviewers";
 import { Links } from "./Links";
+import { Health } from "./Health";
 import { SignIn } from "./SignIn";
 
-type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" } | { name: "reviewers" } | { name: "links" };
+type Route = { name: "queue" } | { name: "review"; id: string } | { name: "corrections" } | { name: "reviewers" } | { name: "links" } | { name: "health" };
 
 function parse(hash: string): Route {
   const m = hash.match(/^#\/review\/([\w-]+)/);
@@ -17,6 +18,7 @@ function parse(hash: string): Route {
   if (hash.startsWith("#/corrections")) return { name: "corrections" };
   if (hash.startsWith("#/reviewers")) return { name: "reviewers" };
   if (hash.startsWith("#/links")) return { name: "links" };
+  if (hash.startsWith("#/health")) return { name: "health" };
   return { name: "queue" };
 }
 
@@ -72,6 +74,7 @@ function App() {
             <nav class="flex gap-1" aria-label="Console">
               {nav("#/queue", "Queue", route.name === "queue" || route.name === "review")}
               {nav("#/links", "Official links", route.name === "links")}
+              {nav("#/health", "Reader health", route.name === "health")}
               {nav("#/corrections", "Error reports", route.name === "corrections")}
               {who.role === "admin" && nav("#/reviewers", "Reviewers", route.name === "reviewers")}
             </nav>
@@ -96,6 +99,8 @@ function App() {
         <Review id={route.id} />
       ) : route.name === "links" ? (
         <Links />
+      ) : route.name === "health" ? (
+        <Health />
       ) : route.name === "corrections" ? (
         <Corrections />
       ) : route.name === "reviewers" && who.role === "admin" ? (

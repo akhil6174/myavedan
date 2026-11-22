@@ -44,3 +44,25 @@ def test_outdated_rules():
     old_result = {"dates": [{"kind": "result", "value": "2026-06-01"}]}
     assert outdated_reason(old_result, "result", today)
     assert outdated_reason({"dates": [{"kind": "exam", "value": "2026-11-07"}]}, "result", today) is None
+
+
+def test_unsure_links():
+    from myavedan_pipeline.discover import classify, is_unsure
+    # Not classified, but worth a look
+    assert classify("Skill test schedule for Stenographer 2026", "https://x.gov.in/a") is None
+    assert is_unsure("Skill test schedule for Stenographer 2026", "https://x.gov.in/a")
+    assert is_unsure("Important information", "https://x.gov.in/files/info.pdf")
+    # Site menus and tenders: never
+    for t in ("Home", "Contact Us", "RTI", "Gallery", "2", "हिन्दी"):
+        assert not is_unsure(t, "https://x.gov.in/" + t)
+    assert not is_unsure("Tender for printing 2026", "https://x.gov.in/t.pdf")
+
+
+def test_site_report_kinds():
+    from myavedan_pipeline.cli import site_report
+    s = {"url": "https://x.gov.in/"}
+    assert site_report(s, {"result": "failed: HTTPError: HTTP Error 403: Forbidden"}, 0)["result"] == "blocked"
+    assert site_report(s, {"result": "failed: URLError: timed out"}, 0)["result"] == "failed"
+    assert site_report(s, {"result": "unchanged"}, 0)["result"] == "unchanged"
+    assert site_report(s, {"result": "ok", "links": 2, "note": "very few links"}, 0)["result"] == "js_page"
+    assert site_report(s, {"result": "ok", "links": 80}, 3) == {"source_url": "https://x.gov.in/", "result": "ok", "new": 3, "links": 80}

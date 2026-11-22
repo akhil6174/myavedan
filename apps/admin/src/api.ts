@@ -144,7 +144,35 @@ export const signIn = {
   signOut: () => authCall("/sign-out", {}),
 };
 
+export interface HealthReport {
+  runs: { id: string; started_at: string; finished_at: string | null; host: string | null; counts: Record<string, number>; errors: string[] }[];
+  sites: {
+    id: string;
+    url: string;
+    organization: string;
+    last_result: string | null;
+    last_error: string | null;
+    last_checked: string | null;
+    last_ok: string | null;
+    last_new: string | null;
+    links: number | null;
+  }[];
+  open_unsure: number;
+}
+
+export interface UnsureLink {
+  id: string;
+  url: string;
+  link_text: string;
+  found_at: string;
+  organization: string | null;
+}
+
 export const api = {
+  health: () => call<HealthReport>("/health"),
+  unsure: () => call<{ items: UnsureLink[] }>("/unsure"),
+  unsureRead: (id: string, kind: string) => call<{ ok: true }>(`/unsure/${id}`, { method: "POST", body: { action: "read", kind } }),
+  unsureDismiss: (id: string) => call<{ ok: true }>(`/unsure/${id}`, { method: "POST", body: { action: "dismiss" } }),
   me: () => call<{ email: string; role: Role }>("/me"),
   publishStatus: () =>
     call<{
