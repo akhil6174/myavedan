@@ -103,6 +103,29 @@ def looks_outdated(text: str, url: str, today: str, max_age_days: int = 150) -> 
     return bool(years) and max(years) < t.year - 1
 
 
+# Site furniture: never a recruitment document.
+NAV = re.compile(
+    r"^(home|about( us)?|contact( us)?|sitemap|faqs?|login|log in|sign in|register|gallery|photo|video|feedback|help|"
+    r"disclaimer|privacy|terms|copyright|accessibility|screen reader|skip to|search|rti|tenders?|news|events?|annual report|"
+    r"who'?s who|organi[sz]ation|vision|mission|history|telephone|directory|careers?|back|next|previous|\d+|[a-z]|hindi|english|"
+    r"हिन्दी|हिंदी|मुख्य पृष्ठ)$",
+    re.I,
+)
+
+
+def is_unsure(text: str, url: str) -> bool:
+    """A link the patterns didn't classify but that may still be a document worth a look:
+    a PDF, or link text that names a year, an exam or a post. Site menus and tenders are left out."""
+    t = " ".join(text.split())
+    hay = f"{t} {urllib.parse.unquote(url)}"
+    if not t or "{{" in t or NAV.match(t) or SKIP.search(hay) or INDEX_LINK.fullmatch(t):
+        return False
+    low = hay.lower()
+    if ".pdf" in low or "file_open" in low:
+        return True
+    return len(t) >= 15 and bool(re.search(r"20\d\d|exam|post|vacan|select|candidate|interview|merit|skill test|document verification|dv|walk.?in", t, re.I))
+
+
 def classify(text: str, url: str) -> str | None:
     """Document kind for a link, or None if it doesn't look like a recruitment document."""
     hay = f"{text} {urllib.parse.unquote(url)}"
@@ -317,7 +340,8 @@ def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) 
 
     html = page.body.decode("utf-8", errors="replace")
     links = extract_links(html, page.url)
-    found = []
+    found: list[Candidate] = []
+    unsure: list[Candidate] = []
     for link, text in links:
         if not on_hosts(link, hosts):
             continue
@@ -326,7 +350,10 @@ def scan_source(fetcher: Fetcher, source: dict, hosts: list[str], state: State) 
         pending = state.seen_urls.get(key, {}).get("status") == "link_pending"
         if kind and (key not in state.seen_urls or pending):
             found.append(Candidate(sid, link, text[:200], kind, key))
+        elif not kind and key not in state.seen_urls and is_unsure(text, link):
+            unsure.append(Candidate(sid, link, text[:200], "unsure", key))
     report.update(result="ok", links=len(links), recruitment_links=len(found), insecure_tls=page.insecure_tls)
+    report["_unsure"] = unsure[:40]
     if len(links) < 5:
         report["note"] = "very few links: the page may be built by JavaScript and need a custom reader"
     return found, report

@@ -5,6 +5,8 @@
  *   GET  /api/health       database reachability
  *   POST /api/ingest       pipeline drafts → D1 (HMAC-signed; the only write path from the pipeline)
  *   POST /api/ingest/known which file fingerprints are already stored (HMAC-signed)
+ *   POST /api/ingest/run   the reader's report after each run (HMAC-signed)
+ *   POST /api/ingest/queued unsure links a reviewer asked the reader to read (HMAC-signed)
  *   POST /api/ingest/links official links (apply, admit card, key, result…) found by the reader (HMAC-signed)
  *   POST /api/corrections  "Report an error" from the public site (CORS, rate-limited)
  *   GET  /api/snapshot     approved records for the site build (bearer token)
@@ -21,6 +23,7 @@ import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
 import { bulkApprove, corrections, decision, fieldDecision, queue, setKind, setRole, updateCorrection, users, version } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, knownHashes, snapshot } from "./routes";
+import { decideUnsure, healthReport, listUnsure, receiveRun, takeQueued } from "./health";
 import { publishComplete, publishStatus, runPublishTrigger } from "./publish";
 import { decideLink, listLinks, listOpportunities, receiveLinks } from "./links";
 
@@ -57,6 +60,12 @@ async function admin(request: Request, env: Env, ctx: ExecutionContext, path: st
   }
 
   if (path === "/api/admin/links" && method === "GET") return listLinks(env);
+  if (path === "/api/admin/health" && method === "GET") return healthReport(env);
+  if (path === "/api/admin/unsure" && method === "GET") return listUnsure(env);
+  {
+    const u = path.match(/^\/api\/admin\/unsure\/([\w-]+)$/);
+    if (u && method === "POST") return decideUnsure(request, env, u[1]!, reviewer);
+  }
   if (path === "/api/admin/opportunities" && method === "GET") return listOpportunities(env);
   m = path.match(/^\/api\/admin\/links\/([\w-]+)$/);
   if (m && method === "POST") return decideLink(request, env, m[1]!, reviewer);
@@ -100,6 +109,8 @@ export default {
       if (pathname === "/api/ingest" && method === "POST") return await ingest(request, env);
       if (pathname === "/api/ingest/known" && method === "POST") return await knownHashes(request, env);
       if (pathname === "/api/ingest/links" && method === "POST") return await receiveLinks(request, env);
+      if (pathname === "/api/ingest/run" && method === "POST") return await receiveRun(request, env);
+      if (pathname === "/api/ingest/queued" && method === "POST") return await takeQueued(request, env);
       if (pathname === "/api/snapshot" && method === "GET") return await snapshot(request, env);
       if (pathname === "/api/publish/complete" && method === "POST") return await publishComplete(request, env);
       if (pathname === "/api/corrections") {

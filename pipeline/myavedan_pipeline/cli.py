@@ -184,17 +184,20 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     return summary
 
 
-def _run_parallel(jobs: list, workers: int) -> int:
+def _run_parallel(jobs: list, workers: int, results: list | None = None) -> int:
     """Run (label, callable) jobs, a few at a time; print one JSON line each. Returns the failure count."""
     failed = 0
     with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
         futures = {pool.submit(fn): label for label, fn in jobs}
         for fut in as_completed(futures):
             try:
-                print(json.dumps(fut.result(), ensure_ascii=False))
+                out = fut.result()
             except Exception as e:  # report and continue with the others
                 failed += 1
-                print(json.dumps({"pdf": futures[fut], "error": str(e)[:400]}, ensure_ascii=False))
+                out = {"pdf": futures[fut], "error": str(e)[:400]}
+            if results is not None:
+                results.append(out)
+            print(json.dumps(out, ensure_ascii=False))
             sys.stdout.flush()
     return failed
 
@@ -231,14 +234,37 @@ def cmd_discover(args: argparse.Namespace) -> int:
     state = State.load(state_path())
     fetcher = Fetcher()
     now = datetime.now(IST).replace(microsecond=0).isoformat()
+    started = now
     today_iso = now[:10]
     todo: list[Candidate] = []
     links_found: list[tuple[dict, Candidate]] = []
+    site_reports: list[dict] = []
+    unsure_found: list[tuple[dict, Candidate]] = []
+    counts = {"sites": 0, "sites_failed": 0, "new_found": 0, "outdated_skipped": 0, "unsure": 0}
+
+    # Links a reviewer marked "read this" in the console's Unsure list.
+    srcs_by_url = {s["url"]: s for s in load_sources().values()}
+    for q in take_queued(args.dry_run):
+        src = srcs_by_url.get(q["source_url"])
+        if src:
+            todo.append(Candidate(src["id"], q["url"], q.get("link_text", "")[:200], q["kind"], q["url"]))
+    counts["from_unsure"] = len(todo)
 
     for s in sources:
         hosts = sorted({host(s["url"]), *EXTRA_HOSTS.get(s["id"], [])})
         first_visit = not state.sources.get(s["id"], {}).get("checked_at")
         found, report = scan_source(fetcher, s, hosts, state)
+        unsure = report.pop("_unsure", [])
+        new_here = 0
+        # The first scan with the Unsure list only records what is already there; later scans list what's new.
+        baseline = first_visit or not state.sources.get(s["id"], {}).get("unsure_baseline")
+        if report.get("result") == "ok":
+            state.sources.setdefault(s["id"], {})["unsure_baseline"] = True
+        for c in unsure:
+            if baseline:
+                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": "unsure", "text": c.text, "status": "unsure_old", "first_seen": now}
+            else:
+                unsure_found.append((s, c))
         for c in found:
             if looks_outdated(c.text, c.url, today_iso):
                 # Names only long-past dates or years: never read, never listed.
@@ -255,9 +281,19 @@ def cmd_discover(args: argparse.Namespace) -> int:
                 todo.append(c)
         if first_visit:
             report["first_visit_backlog"] = len(found)
+        else:
+            new_here = sum(1 for c in found if state.seen_urls.get(c.key, {}).get("status") != "outdated")
+        counts["sites"] += 1
+        counts["new_found"] += new_here
+        counts["outdated_skipped"] += sum(1 for c in found if state.seen_urls.get(c.key, {}).get("status") == "outdated")
+        site_reports.append(site_report(s, report, new_here))
+        if site_reports[-1]["result"] in ("failed", "blocked"):
+            counts["sites_failed"] += 1
         print(json.dumps({"scan": report}, ensure_ascii=False))
         sys.stdout.flush()
         state.save()
+
+    counts["unsure"] = len(unsure_found)
 
     if links_found:
         sent = send_links(links_found, dry_run=args.dry_run)
@@ -313,8 +349,23 @@ def cmd_discover(args: argparse.Namespace) -> int:
             state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "already_sent", "sha256": digest, "first_seen": now}
             continue
         jobs.append((c.url, lambda c=c, got=got: _read_and_mark(state, c, got, srcs[c.source_id], args, now)))
-    failed = _run_parallel(jobs, args.workers)
+    results: list[dict] = []
+    failed = _run_parallel(jobs, args.workers, results)
     state.save()
+    counts.update(
+        gemini_calls=state.usage.get(today, 0) - used,
+        drafts_sent=sum(1 for r in results if r.get("ingest")),
+        outdated_after_reading=sum(1 for r in results if r.get("outdated")),
+        deferred=sum(1 for r in results if r.get("deferred")),
+        read_failed=failed,
+    )
+    errors = [f"{r.get('pdf', '')[:120]}: {r['error'][:200]}" for r in results if r.get("error")]
+    if send_run_report(started, site_reports, unsure_found, counts, errors, args.dry_run):
+        # Only once the server has them, so an unsent unsure link is offered again next run.
+        for _, c in unsure_found:
+            state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": "unsure", "text": c.text, "status": "unsure_sent", "first_seen": now}
+        state.save()
+    print(json.dumps({"run": counts}))
     return 1 if failed else 0
 
 
@@ -370,6 +421,62 @@ def send_links(found: list[tuple[dict, Candidate]], dry_run: bool) -> bool:
         return True
     except Exception as e:  # keep them as pending; the next run sends them again
         print(json.dumps({"links_send_failed": str(e)[:200]}))
+        return False
+
+
+def site_report(source: dict, report: dict, new: int) -> dict:
+    """One line per official site for the console's Health page."""
+    res = str(report.get("result", ""))
+    if res.startswith("paused"):
+        kind = "paused"
+    elif res.startswith("failed"):
+        kind = "blocked" if "403" in res else "failed"
+    elif res.startswith("robots"):
+        kind = "blocked"
+    elif res == "unchanged":
+        kind = "unchanged"
+    elif report.get("note"):
+        kind = "js_page"
+    else:
+        kind = "ok"
+    out = {"source_url": source["url"], "result": kind, "new": new}
+    if "links" in report:
+        out["links"] = report["links"]
+    if kind in ("failed", "blocked", "paused"):
+        out["error"] = res[:300]
+    return out
+
+
+def take_queued(dry_run: bool) -> list[dict]:
+    """Links a reviewer sent from the Unsure list. Taking them marks them as taken on the server."""
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if dry_run or not url or not secret:
+        return []
+    try:
+        return post_draft(url.rstrip("/") + "/queued", secret, {}).get("items", [])
+    except Exception as e:
+        print(json.dumps({"queued_fetch_failed": str(e)[:200]}))
+        return []
+
+
+def send_run_report(started: str, sites: list[dict], unsure: list, counts: dict, errors: list[str], dry_run: bool) -> bool:
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if dry_run or not url or not secret:
+        return False
+    body = {
+        "started_at": started,
+        "finished_at": datetime.now(IST).replace(microsecond=0).isoformat(),
+        "host": os.environ.get("COMPUTERNAME") or os.environ.get("HOSTNAME") or "pc",
+        "counts": counts,
+        "errors": errors[:100],
+        "sources": sites[:500],
+        "unsure": [{"source_url": s["url"], "url": c.url, "link_text": c.text or c.url} for s, c in unsure][:500],
+    }
+    try:
+        post_draft(url.rstrip("/") + "/run", secret, body)
+        return True
+    except Exception as e:  # the run itself still counts; the report is only for the console
+        print(json.dumps({"run_report_failed": str(e)[:200]}))
         return False
 
 
