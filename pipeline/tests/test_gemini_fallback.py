@@ -101,3 +101,13 @@ def test_probable_copies(monkeypatch, tmp_path):
     kept = cli.drop_probable_copies(todo, state, "2026-11-22T10:00:00", counts, dry_run=False)
     assert [c.key for c in kept] == ["b", "c"] and kept[0].kind == "corrigendum"
     assert state.seen_urls["a"]["status"] == "probable_copy" and counts["probable_copies"] == 1
+
+
+def test_backlog_takes_turns():
+    from myavedan_pipeline.discover import Candidate, read_priority, take_turns
+    t = "2026-11-22"
+    c = [Candidate("psssb", f"https://p/{i}-15.11.2026.pdf", f"Notice 15.11.2026 #{i}", "notice", f"p{i}") for i in range(5)]
+    c += [Candidate("rpsc", "https://r/a.pdf", "Advertisement", "notice", "r1"), Candidate("ppsc", "https://q/a.pdf", "Result", "result", "q1")]
+    order = [x.source_id for x in take_turns(c, key=lambda x: read_priority(x, t, from_backlog=True))]
+    assert set(order[:3]) == {"psssb", "rpsc", "ppsc"}  # every site before any site's second item
+    assert order.count("psssb") == 5

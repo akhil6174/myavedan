@@ -7,7 +7,7 @@
 # Each run writes a log to %USERPROFILE%\.myavedan\logs\ (the last 60 are kept).
 param(
   [int]$MaxNew = 15,
-  [int]$FromBacklog = 6,
+  [int]$FromBacklog = 15,
   [switch]$DryRun
 )
 
