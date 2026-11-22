@@ -80,6 +80,29 @@ def notice_score(text: str, url: str, year: str) -> int:
     return score
 
 
+_YEAR = re.compile(r"(?<!\d)(20[0-3]\d)(?!\d)")
+_DMY = re.compile(r"(?<!\d)(\d{1,2})[./-](\d{1,2})[./-](20\d\d)(?!\d)")
+
+
+def looks_outdated(text: str, url: str, today: str, max_age_days: int = 150) -> bool:
+    """Free check before any download or AI call: the link names only years or dates that are long past.
+    A link with no year or date is not judged here (the reader checks its dates after reading)."""
+    import datetime as _dt
+
+    hay = f"{text} {urllib.parse.unquote(url)}"
+    t = _dt.date.fromisoformat(today)
+    dates = []
+    for d, m, y in _DMY.findall(hay):
+        try:
+            dates.append(_dt.date(int(y), int(m), int(d)))
+        except ValueError:
+            pass
+    if dates:
+        return (t - max(dates)).days > max_age_days
+    years = [int(y) for y in _YEAR.findall(hay)]
+    return bool(years) and max(years) < t.year - 1
+
+
 def classify(text: str, url: str) -> str | None:
     """Document kind for a link, or None if it doesn't look like a recruitment document."""
     hay = f"{text} {urllib.parse.unquote(url)}"

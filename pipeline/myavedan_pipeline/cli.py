@@ -24,7 +24,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
+from .discover import looks_outdated, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
 from .sections import coverage_report, section_map
@@ -39,6 +39,28 @@ STATE_NAMES = {
 }
 KINDS = {"notice", "corrigendum", "admit_card", "answer_key", "result", "cutoff", "other"}
 UTS = {"delhi", "chandigarh", "jammu-kashmir", "ladakh"}
+
+
+def outdated_reason(draft: dict, kind: str, today: str) -> str | None:
+    """Not worth listing any more: an opening whose application window and exam are over, or an
+    update (result, admit card...) whose dates are all more than 60 days old."""
+    days = {}
+    for d in draft.get("dates") or []:
+        v = d.get("value")
+        if isinstance(v, str) and len(v) >= 10:
+            days.setdefault(d.get("kind"), []).append(v[:10])
+    every = [v for vs in days.values() for v in vs]
+    if not every:
+        return None
+    if kind == "notice":
+        future = [v for k in ("apply_end", "fee_end", "correction_end", "exam", "admit_card", "result") for v in days.get(k, []) if v >= today]
+        if days.get("apply_end") and not future:
+            return f"applications closed on {max(days['apply_end'])}"
+        return None
+    cutoff = (datetime.fromisoformat(today) - timedelta(days=60)).date().isoformat()
+    if max(every) < cutoff:
+        return f"latest date in it is {max(every)}"
+    return None
 
 
 def load_env() -> None:
@@ -101,6 +123,9 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
     read_kind = extraction.get("document_kind")
+    stale = outdated_reason(draft, read_kind if read_kind in KINDS else kind, today)
+    if stale:
+        return {"pdf": label, "outdated": stale, "model": usage.get("model")}
     if read_kind in KINDS and read_kind != kind:
         flags.append({"field": "document_kind", "code": "kind_from_content", "severity": "warning",
                       "message": f"The link looked like a '{kind}', but the document reads as a '{read_kind}'. Filed as '{read_kind}'."})
@@ -206,6 +231,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     state = State.load(state_path())
     fetcher = Fetcher()
     now = datetime.now(IST).replace(microsecond=0).isoformat()
+    today_iso = now[:10]
     todo: list[Candidate] = []
     links_found: list[tuple[dict, Candidate]] = []
 
@@ -214,15 +240,19 @@ def cmd_discover(args: argparse.Namespace) -> int:
         first_visit = not state.sources.get(s["id"], {}).get("checked_at")
         found, report = scan_source(fetcher, s, hosts, state)
         for c in found:
-            if first_visit:
-                # Old notices already on the site: remember them, don't read them all at once.
+            if looks_outdated(c.text, c.url, today_iso):
+                # Names only long-past dates or years: never read, never listed.
+                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "outdated", "first_seen": now}
+            elif first_visit:
+                # Notices already on the site: remember them; later runs read them a few at a time.
                 state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "backlog", "first_seen": now}
-            elif c.kind == "notice":
-                todo.append(c)
-            else:
-                # Apply pages, admit cards, keys, results, cut-offs, corrigenda: no AI needed.
-                # Sent in one batch below; the API suggests the matching recruitment.
+            elif c.kind == "apply_link":
+                # Apply pages: no document to read. Sent in one batch; the API suggests the recruitment.
                 links_found.append((s, c))
+            else:
+                # Notices, results, admit cards, answer keys, cut-offs, corrigenda: all read, so each
+                # becomes a draft filed by what it actually is.
+                todo.append(c)
         if first_visit:
             report["first_visit_backlog"] = len(found)
         print(json.dumps({"scan": report}, ensure_ascii=False))
@@ -239,7 +269,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     # Daily Gemini cap, counted in IST days across runs.
     today = datetime.now(IST).date().isoformat()
     used = state.usage.get(today, 0)
-    allowed = max(0, int(os.environ.get("GEMINI_DAILY_LIMIT", "16")) - used)
+    allowed = max(0, int(os.environ.get("GEMINI_DAILY_LIMIT", "40")) - used)
     want_new = min(len(todo), args.max_new, allowed)
     want_backlog = min(args.from_backlog, max(0, allowed - want_new))
 
@@ -249,7 +279,8 @@ def cmd_discover(args: argparse.Namespace) -> int:
         (
             Candidate(v["source"], v.get("url", key), v.get("text", ""), v["kind"], key)
             for key, v in state.seen_urls.items()
-            if v.get("status") == "backlog" and v.get("kind") == "notice" and (not args.sources or v["source"] in args.sources)
+            if v.get("status") == "backlog" and v.get("kind") != "apply_link" and (not args.sources or v["source"] in args.sources)
+            and not looks_outdated(v.get("text", ""), v.get("url", key), today)
         ),
         key=lambda c: -notice_score(c.text, c.url, year),
     )
@@ -317,7 +348,7 @@ def _read_and_mark(state: State, c: Candidate, got, source: dict, args: argparse
             # Google was busy: leave the notice unread so the next run tries it again. Not a failure.
             return {"pdf": c.url, "deferred": "Gemini busy, will retry next run"}
         raise
-    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
+    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "outdated" if result.get("outdated") else "dry_run" if args.dry_run else "sent", "sha256": sha256_hex(got.body), "first_seen": now}
     state.save()  # after every notice, so an interrupted run keeps what it already sent
     return result
 
