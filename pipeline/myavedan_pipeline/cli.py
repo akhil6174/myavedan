@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import os
 import sys
 import time
@@ -325,6 +326,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
         key=lambda c: read_priority(c, today, from_backlog=True),
     )
     todo.sort(key=lambda c: read_priority(c, today))
+    todo = drop_probable_copies(todo, state, now, counts, args.dry_run)
     print(json.dumps({"new_notices": len(todo), "reading_new": want_new, "reading_backlog": want_backlog, "gemini_calls_today": used, "daily_limit_left": allowed}))
 
     srcs = load_sources()
@@ -427,6 +429,49 @@ def send_links(found: list[tuple[dict, Candidate]], dry_run: bool) -> bool:
     except Exception as e:  # keep them as pending; the next run sends them again
         print(json.dumps({"links_send_failed": str(e)[:200]}))
         return False
+
+
+REVISION = re.compile(r"corrigend|addend|amendment|revised|revision|extension|extended|modif", re.I)
+
+
+def drop_probable_copies(todo: list[Candidate], state: State, now: str, counts: dict, dry_run: bool) -> list[Candidate]:
+    """Before any download or AI call: a link whose advertisement number or title matches a document
+    we already have is probably the same notice under a new address. Revisions (corrigendum, date
+    extension...) are still read, as corrigenda. Probable copies are recorded, never silently lost."""
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if dry_run or not url or not secret or not todo:
+        return todo
+    by_source: dict[str, list[Candidate]] = {}
+    for c in todo:
+        if not c.key.startswith("queued:"):
+            by_source.setdefault(c.source_id, []).append(c)
+    sources = load_sources()
+    matches: dict[str, dict] = {}
+    for sid, cands in by_source.items():
+        try:
+            res = post_draft(url.rstrip("/") + "/similar", secret, {
+                "source_url": sources[sid]["url"],
+                "items": [{"key": c.key, "url": c.url, "text": c.text or c.url} for c in cands[:100]],
+            })
+            matches.update(res.get("matches", {}))
+        except Exception as e:  # check not available (older API): read everything as before
+            print(json.dumps({"similar_check_failed": str(e)[:200]}))
+            return todo
+    kept, copies = [], 0
+    for c in todo:
+        m = matches.get(c.key)
+        if not m:
+            kept.append(c)
+        elif REVISION.search(c.text or "") or c.kind == "corrigendum":
+            c.kind = "corrigendum"
+            kept.append(c)
+        else:
+            copies += 1
+            state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "probable_copy",
+                                      "copy_of": m["document_url"], "reason": m["reason"], "first_seen": now}
+            print(json.dumps({"probable_copy": c.url, "of": m["document_url"], "reason": m["reason"]}))
+    counts["probable_copies"] = copies
+    return kept
 
 
 def site_report(source: dict, report: dict, new: int) -> dict:

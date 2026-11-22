@@ -35,6 +35,8 @@ export interface Flag {
   code: string;
   severity: "error" | "warning";
   message: string;
+  /** red: must check before approving; yellow: for information. */
+  tier?: "red" | "yellow";
 }
 
 export interface Field {
@@ -74,6 +76,8 @@ export interface VersionDetail {
   approval: Approval;
   pages: Record<string, string>;
   previous: Record<string, unknown> | null;
+  /** For results, admit cards...: the recruitments it most likely belongs to, best first. */
+  suggestions?: { id: string; slug: string; title: string; score: number; why: string }[];
   history: { action: string; field_key: string | null; reviewer: string; reason: string | null; created_at: string }[];
 }
 
