@@ -142,7 +142,7 @@ export default function EligibilityChecker({ posts, pdf }: Props) {
                   <section key={r.postId} aria-label={`Result for ${r.postName}`}>
                     {posts.length > 1 && <h4 class="mb-2 text-base">{r.postName}</h4>}
                     <div class={`grid grid-cols-[2.25rem_minmax(0,1fr)] items-center gap-3 rounded-xl px-3 py-2.5 ${style.box}`}>
-                      <span class={`grid h-9 w-9 place-items-center rounded-full font-mono text-lg font-bold text-surface ${style.icon}`} aria-hidden="true">
+                      <span class={`grid h-9 w-9 place-items-center rounded-full text-lg font-bold text-surface ${style.icon}`} aria-hidden="true">
                         {style.mark}
                       </span>
                       <div>
@@ -157,7 +157,7 @@ export default function EligibilityChecker({ posts, pdf }: Props) {
                         const chip = stateChip(c);
                         return (
                           <li key={c.key} class="grid gap-x-3 gap-y-1 py-2.5 text-sm sm:grid-cols-[9.5rem_minmax(0,1fr)]">
-                            <span class={`self-start justify-self-start rounded px-1.5 py-0.5 font-mono text-xs font-medium ${chip.cls}`}>{chip.label}</span>
+                            <span class={`self-start justify-self-start rounded px-1.5 py-0.5 text-xs font-medium ${chip.cls}`}>{chip.label}</span>
                             <div>
                               <span class="font-semibold">{c.label}. </span>
                               {c.message}{" "}
@@ -169,8 +169,7 @@ export default function EligibilityChecker({ posts, pdf }: Props) {
                                   rel="noopener"
                                   title={`Notice says: “${ev.snippet}”`}
                                 >
-                                  p. {ev.page}
-                                  {ev.section ? ` §${ev.section}` : ""}
+                                  Page {ev.page}
                                 </a>
                               ))}
                             </div>
