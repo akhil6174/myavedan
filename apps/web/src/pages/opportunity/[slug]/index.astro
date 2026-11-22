@@ -1,5 +1,7 @@
 ---
 import Base from "../../../layouts/Base.astro";
+import Timeline from "../../../components/Timeline.astro";
+import SaveButton from "../../../components/SaveButton.astro";
 import StatusPill from "../../../components/StatusPill.astro";
 import EligibilityChecker from "../../../components/EligibilityChecker.tsx";
 import {
@@ -47,7 +49,7 @@ const jump = [
   ["fees", "Fees"],
   ["selection", "Selection"],
   ["documents", "Documents"],
-  ...(events.length ? [["updates", "Updates"]] : []),
+  ["timeline", "Timeline"],
   ["sources", "Sources"],
 ];
 ---
@@ -105,6 +107,7 @@ const jump = [
         <div class="mt-6 flex flex-wrap gap-2">
           <a class="btn btn-primary" href="#eligibility">Check my eligibility</a>
           <a class="btn" href={`/opportunity/${o.slug}/calendar.ics`} download={`${o.slug}.ics`}>Add dates to calendar</a>
+          <SaveButton slug={o.slug} size="md" />
           <a class="btn" href={pdf} target="_blank" rel="noopener">Official notice (PDF) <span aria-hidden="true">↗</span></a>
           {
             o.links.apply && (
@@ -289,28 +292,11 @@ const jump = [
           <p class="mt-2 text-xs text-ink-3">A checklist you can tick off is coming with saved opportunities.</p>
         </section>
 
-        {
-          events.length > 0 && (
-            <section id="updates" aria-labelledby="upd-h">
-              <h2 id="upd-h" class="section-title">Updates</h2>
-              <ol class="relative grid gap-4 border-l-2 border-line pl-5">
-                {events.map((e) => (
-                  <li>
-                    <span class="absolute -left-[0.4rem] mt-1.5 h-3 w-3 rounded-full border-2 border-surface bg-brand" aria-hidden="true" />
-                    <p class="num text-xs text-ink-3">{formatDate(e.date)}</p>
-                    <p class="font-medium">
-                      <span class="mr-2 rounded bg-brand-soft px-1.5 py-0.5 text-xs font-semibold text-brand-ink">{EVENT_LABEL[e.kind]}</span>
-                      {e.title}
-                    </p>
-                    <a class="text-sm" href={e.link} target="_blank" rel="noopener">
-                      Open on the official site <span aria-hidden="true">↗</span>
-                    </a>
-                  </li>
-                ))}
-              </ol>
-            </section>
-          )
-        }
+        <section id="timeline" aria-labelledby="tl-h">
+          <h2 id="tl-h" class="section-title">Timeline</h2>
+          <p class="mb-4 text-sm text-ink-3">Every step of this recruitment in one place, from the notice to the result. Bookmark this page to follow it.</p>
+          <Timeline o={o} />
+        </section>
       </div>
 
       <aside id="sources" aria-labelledby="src-h" class="lg:sticky lg:top-4 lg:self-start">

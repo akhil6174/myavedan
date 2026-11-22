@@ -1,0 +1,54 @@
+---
+import Base from "../layouts/Base.astro";
+import OpportunityCard from "../components/OpportunityCard.astro";
+import { opportunities } from "../lib/snapshot";
+---
+
+<Base title="Saved" description="Recruitments you saved on this device.">
+  <section class="hero-band border-b border-line">
+    <div class="wrap py-8">
+      <h1 class="font-display text-3xl font-bold sm:text-4xl">Saved</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">Recruitments you saved. They're kept on this device only: no account, nothing sent.</p>
+    </div>
+  </section>
+  <div class="wrap py-8">
+    <p id="saved-empty" class="notice">
+      Nothing saved yet. Press <strong>Save</strong> on any recruitment to follow it here. <a href="/explore/">Browse openings</a>
+    </p>
+    <ul id="saved-list" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      {
+        opportunities.map((o) => (
+          <li data-saved-slug={o.slug} hidden>
+            <OpportunityCard o={o} />
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Base>
+
+<script>
+  // Show the saved ones, most recently saved first; update live when something is unsaved.
+  const list = document.getElementById("saved-list")!;
+  const empty = document.getElementById("saved-empty")!;
+  const show = (saved: string[]) => {
+    const items = new Map([...list.querySelectorAll<HTMLLIElement>("[data-saved-slug]")].map((li) => [li.dataset.savedSlug!, li]));
+    for (const li of items.values()) li.hidden = true;
+    let n = 0;
+    for (const slug of saved) {
+      const li = items.get(slug);
+      if (li) {
+        li.hidden = false;
+        list.appendChild(li);
+        n++;
+      }
+    }
+    empty.hidden = n > 0;
+  };
+  document.addEventListener("myavedan:saved-changed", (e) => show((e as CustomEvent<string[]>).detail));
+  try {
+    show(JSON.parse(localStorage.getItem("myavedan:saved") ?? "[]"));
+  } catch {
+    show([]);
+  }
+</script>

@@ -1,0 +1,40 @@
+---
+import Base from "../layouts/Base.astro";
+import CanIApply, { type Listing } from "../components/CanIApply";
+import { dateValue, formatDateTime } from "@myavedan/schema";
+import { jurisdictionLabel, opportunities, statesInUse, statusNow } from "../lib/snapshot";
+
+// Open and upcoming recruitments only: nobody needs to be told they can apply to a closed one.
+const listings: Listing[] = opportunities
+  .filter((o) => ["open", "upcoming"].includes(statusNow(o).status))
+  .map((o) => {
+    const end = dateValue(o.dates, "apply_end");
+    return {
+      slug: o.slug,
+      title: o.title,
+      organization: o.organization.name,
+      place: jurisdictionLabel(o),
+      states: [o.organization.state, ...o.locations].filter((s): s is string => Boolean(s)),
+      central: o.organization.jurisdiction === "central",
+      lastDate: end ? end.slice(0, 10) : null,
+      lastDateLabel: end ? formatDateTime(end) : "Not announced",
+      posts: o.posts.map(({ id, name, rules }) => ({ id, name, rules })),
+    };
+  })
+  .sort((a, b) => (a.lastDate ?? "9999").localeCompare(b.lastDate ?? "9999"));
+---
+
+<Base title="Can I apply?" description="Enter your age, category and qualification once and see every open government recruitment you can apply for.">
+  <section class="hero-band border-b border-line">
+    <div class="wrap py-8">
+      <h1 class="font-display text-3xl font-bold sm:text-4xl">Can I apply?</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">
+        Enter your details once and see every open or upcoming recruitment where you meet the age and qualification rules, with relaxations
+        for your category applied.
+      </p>
+    </div>
+  </section>
+  <div class="wrap py-8">
+    <CanIApply client:load listings={listings} states={statesInUse()} />
+  </div>
+</Base>
