@@ -13,7 +13,7 @@ const end = dateValue(o.dates, "apply_end");
 const Heading = headingLevel === 2 ? "h2" : "h3";
 ---
 
-<article class="card relative flex h-full flex-col gap-3">
+<article class="card card-listing relative flex h-full flex-col gap-3">
   <div class="flex flex-wrap items-center justify-between gap-2">
     <StatusPill o={o} />
     {o.advt_no && <span class="text-xs text-ink-3">{o.advt_no}</span>}
@@ -27,7 +27,7 @@ const Heading = headingLevel === 2 ? "h2" : "h3";
   <dl class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
     <div>
       <dt class="text-xs text-ink-3">Last date</dt>
-      <dd class="num font-medium">{end ? formatDateTime(end) : "Not announced"}</dd>
+      <dd class="num font-semibold"><span class="inline-block rounded-md bg-accent px-1.5 py-0.5 text-ink">{end ? formatDateTime(end) : "Not announced"}</span></dd>
     </div>
     <div>
       <dt class="text-xs text-ink-3">Vacancies</dt>

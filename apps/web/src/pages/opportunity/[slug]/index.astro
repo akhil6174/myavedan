@@ -1,7 +1,6 @@
 ---
 import Base from "../../../layouts/Base.astro";
 import StatusPill from "../../../components/StatusPill.astro";
-import Evidence from "../../../components/Evidence.astro";
 import EligibilityChecker from "../../../components/EligibilityChecker.tsx";
 import {
   DATE_LABEL,
@@ -63,7 +62,7 @@ const jump = [
       {end && <span data-pagefind-sort="deadline">{end.slice(0, 10)}</span>}
     </div>
 
-    <header class="border-b border-line bg-surface">
+    <header class="hero-band border-b border-line">
       <div class="wrap py-8">
         <nav aria-label="Breadcrumb" class="text-sm text-ink-3">
           <a href="/explore/">Explore</a> <span aria-hidden="true">/</span>
@@ -80,24 +79,24 @@ const jump = [
         </p>
 
         <dl class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div class="card">
+          <div class="card border-t-4 border-t-accent">
             <dt class="text-xs text-ink-3">Apply online</dt>
             <dd class="num mt-0.5 font-semibold">
               {start ? formatDate(start) : "Not announced"} to {end ? formatDateTime(end) : "not announced"}
             </dd>
           </div>
-          <div class="card">
+          <div class="card border-t-4 border-t-accent">
             <dt class="text-xs text-ink-3">Vacancies</dt>
             <dd class="num mt-0.5 font-semibold">
               {o.total_vacancies !== null ? o.total_vacancies.toLocaleString("en-IN") : "Not stated"}
               {multiPost && <span class="font-normal text-ink-2"> across {o.posts.length} posts</span>}
             </dd>
           </div>
-          <div class="card">
+          <div class="card border-t-4 border-t-accent">
             <dt class="text-xs text-ink-3">Qualification</dt>
             <dd class="mt-0.5 font-semibold">{o.qualification_levels.map((q) => QUALIFICATION_LABEL[q]).join(" or ")}</dd>
           </div>
-          <div class="card">
+          <div class="card border-t-4 border-t-accent">
             <dt class="text-xs text-ink-3">Application fee</dt>
             <dd class="num mt-0.5 font-semibold">{feeRange}</dd>
           </div>
@@ -138,7 +137,7 @@ const jump = [
           <h2 id="dates-h" class="section-title">Important dates</h2>
           <div class="table-wrap">
             <table>
-              <thead><tr><th scope="col">Event</th><th scope="col">Date</th><th scope="col">Source</th></tr></thead>
+              <thead><tr><th scope="col">Event</th><th scope="col">Date</th></tr></thead>
               <tbody>
                 {
                   o.dates.map((d) => (
@@ -148,7 +147,6 @@ const jump = [
                         {d.value ? formatDateTime(d.value) : (d.approx ?? "To be announced")}
                         {d.tentative && <span class="tentative ml-2">tentative</span>}
                       </td>
-                      <td><Evidence ev={d.evidence} pdf={pdf} /></td>
                     </tr>
                   ))
                 }
@@ -162,7 +160,7 @@ const jump = [
           <h2 id="posts-h" class="section-title">Posts and vacancies</h2>
           <div class="table-wrap">
             <table>
-              <thead><tr><th scope="col">Post</th><th scope="col">Vacancies</th><th scope="col">Pay</th><th scope="col">Source</th></tr></thead>
+              <thead><tr><th scope="col">Post</th><th scope="col">Vacancies</th><th scope="col">Pay</th></tr></thead>
               <tbody>
                 {
                   o.posts.map((p) => (
@@ -170,7 +168,6 @@ const jump = [
                       <td class="font-medium">{p.name}</td>
                       <td class="num">{p.vacancies !== null ? p.vacancies.toLocaleString("en-IN") : "Not stated"}</td>
                       <td>{p.pay ?? "Not stated"}</td>
-                      <td><Evidence ev={p.evidence} pdf={pdf} /></td>
                     </tr>
                   ))
                 }
@@ -193,14 +190,14 @@ const jump = [
                         {r.kind === "dob_window" && (
                           <>
                             <span class="font-semibold">Age: </span>
-                            {r.stated} <Evidence ev={r.evidence} pdf={pdf} />
+                            {r.stated}
                             {r.relaxations.length > 0 && (
                               <ul class="mt-1.5 ml-4 list-disc text-sm text-ink-2">
                                 {r.relaxations.map((x) => (
                                   <li>
                                     {RELAX_LABEL[x.applies_to] ?? x.applies_to}:{" "}
                                     {x.years === null ? "relaxation as per Government rules (no figure given)" : `${x.years} years`}
-                                    {x.cumulative ? ", on top of category relaxation" : ""} <Evidence ev={x.evidence} pdf={pdf} />
+                                    {x.cumulative ? ", on top of category relaxation" : ""}
                                   </li>
                                 ))}
                               </ul>
@@ -210,13 +207,13 @@ const jump = [
                         {r.kind === "qualification" && (
                           <>
                             <span class="font-semibold">Qualification: </span>
-                            {r.stated} <Evidence ev={r.evidence} pdf={pdf} />
+                            {r.stated}
                           </>
                         )}
                         {r.kind === "other" && (
                           <>
                             <span class="font-semibold">{r.label}: </span>
-                            {r.stated} <Evidence ev={r.evidence} pdf={pdf} />
+                            {r.stated}
                           </>
                         )}
                       </li>
@@ -237,13 +234,12 @@ const jump = [
             o.fees.length ? (
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th scope="col">Who</th><th scope="col">Fee</th><th scope="col">Source</th></tr></thead>
+                  <thead><tr><th scope="col">Who</th><th scope="col">Fee</th></tr></thead>
                   <tbody>
                     {o.fees.map((f) => (
                       <tr>
                         <td>{f.applies_to}</td>
                         <td class="num font-medium">{inr(f.amount_inr)}</td>
-                        <td><Evidence ev={f.evidence} pdf={pdf} /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -326,7 +322,6 @@ const jump = [
             {o.provenance.change_note && <div><dt class="text-xs text-ink-3">Latest change</dt><dd>{o.provenance.change_note}</dd></div>}
           </dl>
           <div class="mt-4 grid gap-2">
-            <a class="btn justify-center" href={pdf} target="_blank" rel="noopener">Official notice (PDF) <span aria-hidden="true">↗</span></a>
             <a class="btn justify-center" href={o.links.official_page} target="_blank" rel="noopener">Official recruitment page <span aria-hidden="true">↗</span></a>
           </div>
           <p class="mt-4 border-t border-line pt-3 text-ink-2">

@@ -161,17 +161,7 @@ export default function EligibilityChecker({ posts, pdf }: Props) {
                             <div>
                               <span class="font-semibold">{c.label}. </span>
                               {c.message}{" "}
-                              {c.evidence.map((ev) => (
-                                <a
-                                  class="ev mr-1"
-                                  href={`${pdf}#page=${ev.page}`}
-                                  target="_blank"
-                                  rel="noopener"
-                                  title={`Notice says: “${ev.snippet}”`}
-                                >
-                                  Page {ev.page}
-                                </a>
-                              ))}
+
                             </div>
                           </li>
                         );

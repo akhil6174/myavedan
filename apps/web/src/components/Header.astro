@@ -29,7 +29,7 @@ const current = (href: string) => path === href || (href !== "/" && path.startsW
             aria-current={current(l.href) ? "page" : undefined}
             class:list={[
               "whitespace-nowrap rounded-lg px-3 py-1.5 text-[0.95rem] font-medium no-underline",
-              current(l.href) ? "bg-brand-soft text-brand-ink" : "text-ink-2 hover:bg-sunk hover:text-ink",
+              current(l.href) ? "bg-accent text-ink" : "text-ink-2 hover:bg-accent-soft hover:text-ink",
             ]}
           >
             {l.label}
