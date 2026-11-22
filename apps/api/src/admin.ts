@@ -6,11 +6,13 @@
  *   GET  /api/admin/versions/:id
  *   POST /api/admin/versions/:id/fields     { key, action: approve|edit|reject, value?, reason? }
  *   POST /api/admin/versions/:id/bulk       { keys }            approve several non-critical fields
- *   POST /api/admin/versions/:id/decision   { action: approve|reject|reprocess, reason?, urgent? }
+ *   POST /api/admin/versions/:id/decision   { action: approve|reject|reprocess|attach, reason?, urgent?, opportunity_id? }
+ *   POST /api/admin/versions/:id/kind       { kind }            what the document is (notice, result, admit card...)
  *   GET  /api/admin/corrections
  *   POST /api/admin/corrections/:id         { status }
  */
 import { z } from "zod";
+import { Opportunity } from "@myavedan/schema";
 import type { Env } from "./env";
 import type { Reviewer } from "./access";
 import { istNow } from "./crypto";
@@ -256,11 +258,39 @@ export async function bulkApprove(request: Request, env: Env, id: string, review
 // ------------------------------------------------------------------ version decision
 
 const Decision = z.object({
-  action: z.enum(["approve", "reject", "reprocess"]),
+  action: z.enum(["approve", "reject", "reprocess", "attach"]),
   reason: z.string().max(1000).optional(),
   urgent: z.boolean().optional(),
   change_note: z.string().max(300).optional(),
+  /** attach: the published recruitment this result / admit card / answer key belongs to. */
+  opportunity_id: z.string().min(1).optional(),
+  title: z.string().min(3).max(200).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
+
+export const DOCUMENT_KINDS = ["notice", "corrigendum", "admit_card", "answer_key", "result", "cutoff", "other"] as const;
+/** Documents that are updates to an existing recruitment, not new openings. */
+export const UPDATE_KINDS = ["corrigendum", "admit_card", "answer_key", "result", "cutoff"];
+
+const KindChange = z.object({ kind: z.enum(DOCUMENT_KINDS) });
+
+export async function setKind(request: Request, env: Env, id: string, reviewer: Reviewer): Promise<Response> {
+  const parsed = await body(request, KindChange);
+  if (!parsed.ok) return parsed.res;
+  const row = await env.DB.prepare("SELECT v.document_id, v.state FROM document_version v WHERE v.id = ?").bind(id).first<{ document_id: string; state: string }>();
+  if (!row) return problem(404, "version not found");
+  if (!REVIEWABLE.includes(row.state)) return problem(409, `version is ${row.state}, not open for review`);
+  await env.DB.batch([
+    env.DB.prepare("UPDATE document SET kind = ? WHERE id = ?").bind(parsed.data.kind, row.document_id),
+    env.DB.prepare("INSERT INTO review_event (id, document_version_id, reviewer, action, reason) VALUES (?, ?, ?, 'set_kind', ?)").bind(
+      crypto.randomUUID(),
+      id,
+      reviewer.email,
+      parsed.data.kind,
+    ),
+  ]);
+  return json({ ok: true, kind: parsed.data.kind });
+}
 
 export async function decision(
   request: Request,
@@ -290,6 +320,13 @@ export async function decision(
     const next = action === "reject" ? "rejected" : "parsed"; // parsed = extraction runs again on the next pipeline run
     await env.DB.batch([env.DB.prepare("UPDATE document_version SET state = ? WHERE id = ?").bind(next, id), event(action)]);
     return json({ ok: true, state: next });
+  }
+
+  if (action === "attach") return attachUpdate(env, row, parsed.data, reviewer, event, onApproved);
+  if (row.doc_kind !== "notice") {
+    return problem(409, UPDATE_KINDS.includes(row.doc_kind)
+      ? `this is a ${row.doc_kind.replace("_", " ")}: attach it to its recruitment instead of publishing it as a new opening`
+      : "documents of type 'other' can't be published; reject it or change its type");
   }
 
   // Approve: every critical field checked, and the record must pass the public schema.
@@ -387,4 +424,44 @@ export async function updateCorrection(request: Request, env: Env, id: string): 
     .run();
   if (!res.meta.changes) return problem(404, "report not found");
   return json({ ok: true, status: parsed.data.status });
+}
+
+// ------------------------------------------------------------------ updates (result, admit card, ...)
+
+async function attachUpdate(
+  env: Env,
+  row: VersionRow,
+  d: z.infer<typeof Decision>,
+  reviewer: Reviewer,
+  event: (name: string) => D1PreparedStatement,
+  onApproved: (urgent: boolean) => void,
+): Promise<Response> {
+  if (!UPDATE_KINDS.includes(row.doc_kind)) return problem(409, "only results, admit cards, answer keys, cut-offs and corrigenda are attached to a recruitment");
+  if (!d.opportunity_id) return problem(422, "choose the recruitment this belongs to");
+  const opp = await env.DB.prepare("SELECT id, slug, published_json, current_version_id FROM opportunity WHERE id = ? AND publish_state = 'published'")
+    .bind(d.opportunity_id)
+    .first<{ id: string; slug: string; published_json: string; current_version_id: string | null }>();
+  if (!opp) return problem(404, "recruitment not found");
+
+  const draft = parseDraft(row) as { title?: { value?: unknown } | string };
+  const draftTitle = typeof draft.title === "string" ? draft.title : typeof draft.title?.value === "string" ? draft.title.value : null;
+  const title = (d.title ?? draftTitle ?? row.doc_kind.replace("_", " ")).slice(0, 200);
+  const reviewedAt = istNow();
+  const record = JSON.parse(opp.published_json);
+  const events = (record.events ?? []).filter((e: { link: string }) => e.link !== row.doc_url);
+  events.push({ kind: row.doc_kind, date: d.date ?? reviewedAt.slice(0, 10), title, link: row.doc_url, evidence: null });
+  record.events = events;
+  record.provenance = { ...record.provenance, last_checked_at: reviewedAt };
+  const check = Opportunity.safeParse(record);
+  if (!check.success) return problem(422, "the recruitment would no longer pass validation", { issues: check.error.issues.slice(0, 10) });
+
+  await env.DB.batch([
+    env.DB.prepare("UPDATE opportunity SET published_json = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").bind(JSON.stringify(check.data), opp.id),
+    env.DB.prepare("UPDATE document SET opportunity_id = ? WHERE id = ?").bind(opp.id, row.document_id),
+    env.DB.prepare("UPDATE document_version SET state = 'approved' WHERE id = ?").bind(row.id),
+    env.DB.prepare("INSERT INTO publish_queue (document_version_id, queued_at, urgent) VALUES (?, ?, ?) ON CONFLICT DO NOTHING").bind(row.id, reviewedAt, d.urgent ? 1 : 0),
+    event("attach"),
+  ]);
+  onApproved(Boolean(d.urgent));
+  return json({ ok: true, state: "approved", opportunity: { id: opp.id, slug: opp.slug }, urgent: Boolean(d.urgent) });
 }
