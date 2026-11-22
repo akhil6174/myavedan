@@ -22,20 +22,20 @@ const quick = [
 
 const steps = [
   { t: "Find", d: "Search official recruitment notices by qualification, state or keyword." },
-  { t: "Understand", d: "Read the key facts in plain language, each linked to the page of the notice it comes from." },
+  { t: "Understand", d: "Read the key facts in plain language, with the official notice one tap away." },
   { t: "Check", d: "See whether you meet the age and qualification rules for each post, with the reason for every answer." },
   { t: "Track", d: "Add deadlines to your calendar and follow admit cards and results for the same recruitment." },
 ];
 ---
 
 <Base title="MyAvedan">
-  <section class="border-b border-line bg-surface">
+  <section class="hero-band border-b border-line">
     <div class="wrap grid gap-8 py-12 md:py-16 lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-end">
       <div>
-        <p class="eyebrow">Government recruitment, made clear</p>
+        <p class="inline-flex items-center gap-2 rounded-full border border-[#ccfbf1] bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-ink">Government recruitment, made clear</p>
         <h1 class="mt-3 text-4xl sm:text-5xl">Find opportunities that fit your profile</h1>
         <p class="mt-4 max-w-2xl text-lg text-ink-2">
-          Official notices turned into clear facts you can check. Every date, fee and rule links to the page of the notice it comes from.
+          Official notices turned into clear facts you can check. Every listing links to the official notice.
         </p>
         <form action="/explore/" method="get" role="search" class="mt-6 flex max-w-2xl flex-col gap-2 sm:flex-row">
           <label for="hero-q" class="sr-only">Search opportunities</label>
@@ -58,7 +58,7 @@ const steps = [
         <ul class="mt-2 space-y-1.5 text-ink-2">
           <li>Only official recruitment websites are used as sources.</li>
           <li>A person compares every date, fee and rule with the notice before it goes live.</li>
-          <li>Each fact shows the page it came from, like <span class="ev">Page 4</span></li>
+          <li>Every listing links to the official notice PDF.</li>
         </ul>
         <a class="mt-3 inline-block" href="/about/#how-we-verify">How we verify notices</a>
       </aside>
@@ -97,7 +97,7 @@ const steps = [
           <h2 id="soon-h" class="section-title mb-0">Closing soon</h2>
           <a href="/explore/?status=open&sort=deadline">All open opportunities</a>
         </div>
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {soon.map((o) => <OpportunityCard o={o} />)}
         </div>
       </section>
@@ -111,7 +111,7 @@ const steps = [
           <h2 id="latest-h" class="section-title mb-0">Latest openings</h2>
           <a href="/explore/?sort=newest">See all</a>
         </div>
-        <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
           {latest.map((o) => <OpportunityCard o={o} />)}
         </div>
       </section>
@@ -132,7 +132,7 @@ const steps = [
       {
         steps.map((s, i) => (
           <li class="card">
-            <span class="grid h-7 w-7 place-items-center rounded-full bg-accent text-sm font-bold text-ink">{i + 1}</span>
+            <span class="grid h-9 w-9 place-items-center rounded-xl border border-[#ccfbf1] bg-brand-soft text-sm font-bold text-brand-ink">{i + 1}</span>
             <p class="mt-1 font-display text-lg font-bold" style="font-stretch: 88%">
               {s.t}
             </p>

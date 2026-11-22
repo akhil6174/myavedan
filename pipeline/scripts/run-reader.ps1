@@ -6,8 +6,8 @@
 #   INGEST_HMAC_SECRET=...      (production ingest secret)
 # Each run writes a log to %USERPROFILE%\.myavedan\logs\ (the last 60 are kept).
 param(
-  [int]$MaxNew = 10,
-  [int]$FromBacklog = 0,
+  [int]$MaxNew = 15,
+  [int]$FromBacklog = 6,
   [switch]$DryRun
 )
 

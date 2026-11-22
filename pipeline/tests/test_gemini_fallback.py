@@ -27,3 +27,20 @@ def test_real_errors_do_not_fall_back(monkeypatch):
         raise AssertionError("should raise")
     except gemini.GeminiError as e:
         assert not gemini.is_busy(e)
+
+
+def test_outdated_rules():
+    from myavedan_pipeline.cli import outdated_reason
+    from myavedan_pipeline.discover import looks_outdated
+    today = "2026-11-22"
+    assert looks_outdated("Result of Advt 05/2023", "https://x.gov.in/a.pdf", today)
+    assert looks_outdated("Notice dated 03.02.2026", "https://x.gov.in/a.pdf", today)
+    assert not looks_outdated("Notice dated 12.11.2026", "https://x.gov.in/a.pdf", today)
+    assert not looks_outdated("Recruitment notice", "https://x.gov.in/a.pdf", today)
+    closed = {"dates": [{"kind": "apply_end", "value": "2026-09-01"}]}
+    assert outdated_reason(closed, "notice", today)
+    with_exam = {"dates": [{"kind": "apply_end", "value": "2026-09-01"}, {"kind": "exam", "value": "2026-12-10"}]}
+    assert outdated_reason(with_exam, "notice", today) is None
+    old_result = {"dates": [{"kind": "result", "value": "2026-06-01"}]}
+    assert outdated_reason(old_result, "result", today)
+    assert outdated_reason({"dates": [{"kind": "exam", "value": "2026-11-07"}]}, "result", today) is None
