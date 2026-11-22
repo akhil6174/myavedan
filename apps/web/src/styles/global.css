@@ -240,11 +240,14 @@
   .tag-saffron { background: var(--accent-soft); color: var(--accent-ink); border-color: #fed7aa; }
   .tag-blue { background: #eff6ff; color: #1d4ed8; border-color: #dbeafe; }
 
+  @media (min-width: 640px) {
+    .icon-tile { width: 3.5rem; height: 3.5rem; }
+  }
   .icon-tile {
     display: grid;
     place-items: center;
-    width: 3.5rem;
-    height: 3.5rem;
+    width: 2.75rem;
+    height: 2.75rem;
     flex-shrink: 0;
     border-radius: 0.75rem;
     border: 1px solid;
