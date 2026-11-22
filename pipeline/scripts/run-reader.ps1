@@ -4,10 +4,12 @@
 # Settings come from %USERPROFILE%\.myavedan\.env (never committed):
 #   GEMINI_API_KEY=...
 #   INGEST_HMAC_SECRET=...      (production ingest secret)
+# Only notices that appear on the official sites from now on are read (FromBacklog = 0): the site
+# lists notices from before launch too, but those were recorded on the first visit and are left alone.
 # Each run writes a log to %USERPROFILE%\.myavedan\logs\ (the last 60 are kept).
 param(
   [int]$MaxNew = 15,
-  [int]$FromBacklog = 15,
+  [int]$FromBacklog = 0,
   [switch]$DryRun
 )
 
