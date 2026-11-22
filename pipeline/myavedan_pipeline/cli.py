@@ -24,9 +24,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import looks_outdated, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
+from .discover import looks_outdated, read_priority, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
+from .normalise import page_text
+from .crosscheck import crosscheck
 from .sections import coverage_report, section_map
 from .stages import parse_pdf
 
@@ -110,7 +112,8 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     digest = sha256_hex(data)
     started = time.time()
     parsed = parse_pdf(data)
-    pages = {p.number: p.text for p in parsed}
+    # Hindi digits/terms normalised and tables added as Markdown; used for reading AND fact-checking.
+    pages = {p.number: page_text(p.text, p.tables) for p in parsed}
     unread = [p.number for p in parsed if len(p.text.strip()) < 40]
     coverage = coverage_report(section_map([p.text for p in parsed]))
 
@@ -122,6 +125,7 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
+    flags += crosscheck(draft, pages)  # second, rule-based read of last date, vacancies, age, fee
     read_kind = extraction.get("document_kind")
     stale = outdated_reason(draft, read_kind if read_kind in KINDS else kind, today)
     if stale:
@@ -247,7 +251,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     for q in take_queued(args.dry_run):
         src = srcs_by_url.get(q["source_url"])
         if src:
-            todo.append(Candidate(src["id"], q["url"], q.get("link_text", "")[:200], q["kind"], q["url"]))
+            todo.append(Candidate(src["id"], q["url"], q.get("link_text", "")[:200], q["kind"], "queued:" + q["url"]))
     counts["from_unsure"] = len(todo)
 
     for s in sources:
@@ -318,8 +322,9 @@ def cmd_discover(args: argparse.Namespace) -> int:
             if v.get("status") == "backlog" and v.get("kind") != "apply_link" and (not args.sources or v["source"] in args.sources)
             and not looks_outdated(v.get("text", ""), v.get("url", key), today)
         ),
-        key=lambda c: -notice_score(c.text, c.url, year),
+        key=lambda c: read_priority(c, today, from_backlog=True),
     )
+    todo.sort(key=lambda c: read_priority(c, today))
     print(json.dumps({"new_notices": len(todo), "reading_new": want_new, "reading_backlog": want_backlog, "gemini_calls_today": used, "daily_limit_left": allowed}))
 
     srcs = load_sources()

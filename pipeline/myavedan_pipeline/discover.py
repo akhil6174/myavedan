@@ -65,6 +65,39 @@ def link_key(url: str, text: str, source_id: str) -> str:
     return url
 
 
+_PRIORITY = {"corrigendum": 0, "notice": 1, "result": 2, "admit_card": 2, "answer_key": 2, "cutoff": 2}
+
+
+def read_priority(c: "Candidate", today: str, from_backlog: bool = False) -> tuple:
+    """Order for spending the day's Gemini calls (lower first):
+    reviewer-requested links, date changes, recent openings, results/admit cards, other new items,
+    then the backlog, newest-looking first."""
+    import datetime as _dt
+
+    hay = f"{c.text} {urllib.parse.unquote(c.url)}"
+    t = _dt.date.fromisoformat(today)
+    dates = []
+    for d, m, y in _DMY.findall(hay):
+        try:
+            dates.append(_dt.date(int(y), int(m), int(d)))
+        except ValueError:
+            pass
+    age = (t - max(dates)).days if dates else 9999
+    recent = age <= 30
+    kind_rank = _PRIORITY.get(c.kind, 3)
+    if c.key.startswith("queued:"):
+        group = -1
+    elif from_backlog:
+        group = 10
+    elif c.kind == "corrigendum":
+        group = 0
+    elif c.kind == "notice" and recent:
+        group = 1
+    else:
+        group = 1 + kind_rank
+    return (group, age, -notice_score(c.text, c.url, today[:4]))
+
+
 def notice_score(text: str, url: str, year: str) -> int:
     """How likely a backlog link is a current, readable notification (higher first)."""
     hay = f"{text} {urllib.parse.unquote(url)}".lower()
