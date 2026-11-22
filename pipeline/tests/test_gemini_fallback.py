@@ -66,3 +66,38 @@ def test_site_report_kinds():
     assert site_report(s, {"result": "unchanged"}, 0)["result"] == "unchanged"
     assert site_report(s, {"result": "ok", "links": 2, "note": "very few links"}, 0)["result"] == "js_page"
     assert site_report(s, {"result": "ok", "links": 80}, 3) == {"source_url": "https://x.gov.in/", "result": "ok", "new": 3, "links": 80}
+
+
+def test_read_priority():
+    from myavedan_pipeline.discover import Candidate, read_priority
+    t = "2026-11-22"
+    c = lambda kind, text, key="": Candidate("s", f"https://x.gov.in/{text}", text, kind, key)
+    items = [
+        c("notice", "Recruitment notice 2024 old"),
+        c("result", "Result of exam"),
+        c("notice", "Advertisement dated 15.11.2026"),
+        c("corrigendum", "Date extension"),
+        c("notice", "Reviewer asked", key="queued:x"),
+    ]
+    order = [x.text for x in sorted(items, key=lambda x: read_priority(x, t))]
+    assert order[:3] == ["Reviewer asked", "Date extension", "Advertisement dated 15.11.2026"]
+    assert read_priority(items[1], t) < read_priority(items[1], t, from_backlog=True)
+
+
+def test_probable_copies(monkeypatch, tmp_path):
+    from myavedan_pipeline import cli
+    from myavedan_pipeline.discover import Candidate, State
+    monkeypatch.setenv("INGEST_URL", "https://api.test/api/ingest")
+    monkeypatch.setenv("INGEST_HMAC_SECRET", "s")
+    monkeypatch.setattr(cli, "load_sources", lambda: {"s": {"id": "s", "url": "https://x.gov.in/"}})
+    monkeypatch.setattr(cli, "post_draft", lambda url, secret, body: {"matches": {
+        "a": {"document_url": "https://x.gov.in/old.pdf", "kind": "notice", "reason": "same advertisement number 5/2026"},
+        "b": {"document_url": "https://x.gov.in/old.pdf", "kind": "notice", "reason": "same advertisement number 5/2026"},
+    }})
+    todo = [Candidate("s", "https://x.gov.in/a.pdf", "Advt 5/2026 notice", "notice", "a"),
+            Candidate("s", "https://x.gov.in/b.pdf", "Advt 5/2026 date extension", "notice", "b"),
+            Candidate("s", "https://x.gov.in/c.pdf", "Other notice", "notice", "c")]
+    state, counts = State(tmp_path / "st.json"), {}
+    kept = cli.drop_probable_copies(todo, state, "2026-11-22T10:00:00", counts, dry_run=False)
+    assert [c.key for c in kept] == ["b", "c"] and kept[0].kind == "corrigendum"
+    assert state.seen_urls["a"]["status"] == "probable_copy" and counts["probable_copies"] == 1

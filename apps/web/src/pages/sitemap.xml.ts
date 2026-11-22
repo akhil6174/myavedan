@@ -2,7 +2,7 @@ import type { APIRoute } from "astro";
 import { isSample, opportunities } from "../lib/snapshot";
 
 // Pages worth indexing. Sample builds list nothing (they are noindex anyway).
-const STATIC = ["/", "/explore/", "/admit-cards/", "/results/", "/about/", "/privacy/", "/terms/", "/disclaimer/"];
+const STATIC = ["/", "/explore/", "/can-i-apply/", "/admit-cards/", "/results/", "/about/", "/privacy/", "/terms/", "/disclaimer/"];
 
 export const GET: APIRoute = ({ site }) => {
   const base = site ?? new URL("https://myavedan.in");

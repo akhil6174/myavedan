@@ -2,6 +2,7 @@
 import type { Opportunity } from "@myavedan/schema";
 import { QUALIFICATION_LABEL, dateValue, formatDate, formatDateTime } from "@myavedan/schema";
 import StatusPill from "./StatusPill.astro";
+import SaveButton from "./SaveButton.astro";
 import { jurisdictionLabel } from "../lib/snapshot";
 
 interface Props {
@@ -61,6 +62,9 @@ const tile = /police|army|navy|air force|defence|cisf|crpf|bsf|itbp|ssb|guard/.t
       <p class="text-xs text-ink-3">Last date</p>
       <p class="num font-semibold text-ink">{end ? formatDateTime(end) : "Not announced"}</p>
     </div>
-    <span class="btn btn-primary pointer-events-none whitespace-nowrap px-4 py-2.5 text-sm sm:px-5" aria-hidden="true">View details</span>
+    <span class="flex items-center gap-2">
+      <SaveButton slug={o.slug} />
+      <span class="btn btn-primary pointer-events-none whitespace-nowrap px-4 py-2.5 text-sm sm:px-5" aria-hidden="true">View details</span>
+    </span>
   </div>
 </article>

@@ -224,6 +224,15 @@
     color: var(--brand);
   }
 
+  .save-btn.is-saved {
+    background: var(--brand-soft);
+    border-color: #99f6e4;
+    color: var(--brand-ink);
+  }
+  .save-btn.is-saved svg {
+    fill: currentColor;
+  }
+
   .tag {
     display: inline-flex;
     align-items: center;

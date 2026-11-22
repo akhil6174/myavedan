@@ -1,0 +1,107 @@
+---
+/**
+ * One timeline for a recruitment, from notification to result: the notice's own dates plus every
+ * later official update (corrigendum, admit card, answer key, result, cut-off). Past steps are ticked,
+ * the next step is highlighted, and the step state is refreshed in the browser at page load.
+ */
+import type { Opportunity } from "@myavedan/schema";
+import { DATE_LABEL, EVENT_LABEL, formatDate, formatDateTime } from "@myavedan/schema";
+
+interface Props {
+  o: Opportunity;
+}
+const { o } = Astro.props;
+
+type Step = { key: string; label: string; date: string | null; approx?: string; tentative?: boolean; title?: string; link?: string; order: number };
+
+const ORDER: Record<string, number> = {
+  notification: 0,
+  apply_start: 1,
+  corrigendum: 2,
+  postponed: 2,
+  apply_end: 3,
+  fee_end: 3.1,
+  correction_start: 3.2,
+  correction_end: 3.3,
+  admit_card: 4,
+  exam: 5,
+  answer_key: 6,
+  cutoff: 7,
+  result: 8,
+  cancelled: 9,
+};
+
+const steps: Step[] = [];
+for (const d of o.dates) {
+  // A later official update replaces the notice's expected date for the same step.
+  if ((d.kind === "admit_card" || d.kind === "result") && o.events.some((e) => e.kind === d.kind)) continue;
+  steps.push({ key: `d-${d.kind}`, label: d.label ?? DATE_LABEL[d.kind], date: d.value, approx: d.approx, tentative: d.tentative, order: ORDER[d.kind] ?? 5 });
+}
+for (const [i, e] of o.events.entries()) {
+  steps.push({ key: `e-${i}`, label: EVENT_LABEL[e.kind], date: e.date, title: e.title, link: e.link, order: ORDER[e.kind] ?? 6 });
+}
+// Dated steps in date order; a step with no date yet keeps its usual place (admit card before exam...).
+steps.sort((a, b) => (a.date && b.date ? a.date.slice(0, 10).localeCompare(b.date.slice(0, 10)) || a.order - b.order : a.order - b.order));
+---
+
+<ol class="timeline relative grid gap-5 border-l-2 border-line pl-6" data-timeline>
+  {
+    steps.map((s) => (
+      <li class="relative" data-date={s.date ? s.date.slice(0, 10) : ""}>
+        <span class="tl-dot absolute -left-[1.95rem] top-0.5 grid h-5 w-5 place-items-center rounded-full border-2 border-line bg-surface text-[11px] font-bold text-surface" aria-hidden="true">
+          ✓
+        </span>
+        <p class="num text-xs font-semibold text-ink-3">
+          {s.date ? (s.date.length > 10 ? formatDateTime(s.date) : formatDate(s.date)) : (s.approx ?? "Date not announced yet")}
+          {s.tentative && <span class="tag tag-saffron ml-2">expected</span>}
+          <span class="tl-now tag tag-teal ml-2" hidden>
+            Next
+          </span>
+        </p>
+        <p class="font-medium text-ink">
+          {s.label}
+          {s.title && <span class="font-normal text-ink-2"> · {s.title}</span>}
+        </p>
+        {s.link && (
+          <a class="text-sm" href={s.link} target="_blank" rel="noopener">
+            Open on the official site <span aria-hidden="true">↗</span>
+          </a>
+        )}
+      </li>
+    ))
+  }
+</ol>
+
+<style>
+  .timeline li[data-state="past"] .tl-dot {
+    background: var(--brand);
+    border-color: var(--brand);
+  }
+  .timeline li[data-state="next"] .tl-dot {
+    background: var(--accent);
+    border-color: var(--accent-ink);
+  }
+  .timeline li[data-state="next"] {
+    background: var(--accent-soft);
+    margin-left: -0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+  }
+</style>
+
+<script>
+  // Mark past steps and the next one, using today's date in India.
+  const today = new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10);
+  for (const list of document.querySelectorAll<HTMLElement>("[data-timeline]")) {
+    let next = false;
+    for (const li of list.querySelectorAll<HTMLElement>("li")) {
+      const d = li.dataset.date;
+      if (d && d < today) li.dataset.state = "past";
+      else if (!next) {
+        li.dataset.state = "next";
+        li.querySelector<HTMLElement>(".tl-now")?.removeAttribute("hidden");
+        next = true;
+      }
+    }
+  }
+</script>

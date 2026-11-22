@@ -16,6 +16,7 @@ import { Opportunity } from "@myavedan/schema";
 import type { Env } from "./env";
 import type { Reviewer } from "./access";
 import { istNow } from "./crypto";
+import { suggest, type Candidate, type Suggestion } from "./links";
 import { json, problem, readBody } from "./http";
 import {
   approvalCheck,
@@ -29,6 +30,18 @@ import {
 } from "./review";
 
 const REVIEWABLE = ["needs_review", "validation_failed"];
+
+// ------------------------------------------------------------------ flag tiers
+
+/** Red: must be checked against the PDF before approving. Yellow: for information. */
+const RED_CODES = new Set(["value_differs_from_quote", "vacancies_dont_add_up", "date_order", "dates_out_of_order"]);
+export type Tier = "red" | "yellow";
+export function flagTier(f: Flag): Tier {
+  return f.severity === "error" || RED_CODES.has(f.code) || f.code.startsWith("second_check_") ? "red" : "yellow";
+}
+function withTiers(flags: Flag[]): (Flag & { tier: Tier })[] {
+  return flags.map((f) => ({ ...f, tier: flagTier(f) })).sort((a, b) => Number(a.tier === "yellow") - Number(b.tier === "yellow"));
+}
 
 interface VersionRow {
   id: string;
@@ -123,8 +136,8 @@ export async function queue(env: Env): Promise<Response> {
       document_url: r.doc_url,
       update: Boolean(r.opportunity_id) || r.version_no > 1,
       apply_end: applyEnd,
-      errors: flags.filter((f) => f.severity === "error").length,
-      warnings: flags.filter((f) => f.severity === "warning").length,
+      errors: flags.filter((f) => flagTier(f) === "red").length,
+      warnings: flags.filter((f) => flagTier(f) === "yellow").length,
       received_at: r.created_at,
       priority: priority(applyEnd, r.tier ?? 2, today) - (r.opportunity_id ? 2 : 0),
     };
@@ -170,7 +183,18 @@ export async function version(env: Env, id: string): Promise<Response> {
     .bind(id)
     .all();
 
+  // Results, admit cards...: the recruitments they most likely belong to, best first.
+  let suggestions: Suggestion[] = [];
+  if (UPDATE_KINDS.includes(row.doc_kind)) {
+    const candidates = (
+      await env.DB.prepare("SELECT id, slug, title, advt_no, organization_id FROM opportunity WHERE publish_state = 'published'").all<Candidate>()
+    ).results;
+    const text = [draftText(draft.title), draftText(draft.advt_no), draftText(draft.summary)].filter(Boolean).join(" ");
+    suggestions = suggest(text, row.doc_url, row.organization_id, candidates, 5);
+  }
+
   return json({
+    suggestions,
     version: {
       id: row.id,
       state: row.state,
@@ -182,7 +206,7 @@ export async function version(env: Env, id: string): Promise<Response> {
       document_kind: row.doc_kind,
       reviewable: REVIEWABLE.includes(row.state),
     },
-    flags,
+    flags: withTiers(flags),
     fields: fields.map((f) => ({ ...f, state: stateOf(f.key, states), decision: states.get(f.key) ?? null })),
     approval: approvalCheck(fields, states),
     pages,
@@ -464,4 +488,15 @@ async function attachUpdate(
   ]);
   onApproved(Boolean(d.urgent));
   return json({ ok: true, state: "approved", opportunity: { id: opp.id, slug: opp.slug }, urgent: Boolean(d.urgent) });
+}
+
+/** A draft field may be a plain value or { value, ... }. */
+function draftText(v: unknown): string {
+  if (typeof v === "string") return v;
+  if (v && typeof v === "object") {
+    const o = v as Record<string, unknown>;
+    if (typeof o.value === "string") return o.value;
+    if (typeof o.en === "string") return o.en;
+  }
+  return "";
 }

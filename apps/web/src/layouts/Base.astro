@@ -69,5 +69,45 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://myavedan.in
       }
       document.dispatchEvent(new CustomEvent("myavedan:status-ready"));
     </script>
+    <script>
+      // Saved recruitments live on this device only. If storage is blocked, saving simply doesn't stick.
+      const KEY = "myavedan:saved";
+      const read = (): string[] => {
+        try {
+          return JSON.parse(localStorage.getItem(KEY) ?? "[]");
+        } catch {
+          return [];
+        }
+      };
+      const write = (list: string[]) => {
+        try {
+          localStorage.setItem(KEY, JSON.stringify(list));
+        } catch {
+          /* not kept */
+        }
+      };
+      const paint = () => {
+        const saved = new Set(read());
+        for (const b of document.querySelectorAll<HTMLButtonElement>("[data-save]")) {
+          const on = saved.has(b.dataset.save!);
+          b.setAttribute("aria-pressed", String(on));
+          b.classList.toggle("is-saved", on);
+          const label = b.querySelector("[data-save-label]");
+          if (label) label.textContent = on ? "Saved" : "Save";
+        }
+        document.dispatchEvent(new CustomEvent("myavedan:saved-changed", { detail: [...saved] }));
+      };
+      document.addEventListener("click", (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLButtonElement>("[data-save]");
+        if (!b) return;
+        e.preventDefault();
+        e.stopPropagation();
+        const list = read();
+        const slug = b.dataset.save!;
+        write(list.includes(slug) ? list.filter((s) => s !== slug) : [slug, ...list]);
+        paint();
+      });
+      paint();
+    </script>
   </body>
 </html>

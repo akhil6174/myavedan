@@ -37,3 +37,23 @@ describe("suggest", () => {
     expect(suggest("Holiday list", "https://ssc.gov.in/h.pdf", "org_other", candidates)).toEqual([]);
   });
 });
+
+import { overlap, tokens as tk } from "./links";
+import { flagTier } from "./admin";
+
+describe("similar documents", () => {
+  it("measures title-word overlap on the smaller title", () => {
+    expect(overlap(tk("Junior Clerk Recruitment 2026 Detailed Notice"), tk("Detailed notice: Junior Clerk 2026"))).toBeGreaterThanOrEqual(0.9);
+    expect(overlap(tk("Junior Clerk Recruitment"), tk("Constable Driver Recruitment"))).toBeLessThan(0.5);
+    expect(overlap(new Set(), tk("anything"))).toBe(0);
+  });
+});
+
+describe("flag tiers", () => {
+  it("puts errors and second checks in red, the rest in yellow", () => {
+    expect(flagTier({ field: "x", code: "value_differs_from_quote", severity: "error", message: "" })).toBe("red");
+    expect(flagTier({ field: "x", code: "second_check_fee", severity: "warning", message: "" })).toBe("red");
+    expect(flagTier({ field: "x", code: "lite_model", severity: "warning", message: "" })).toBe("yellow");
+    expect(flagTier({ field: "x", code: "insecure_tls", severity: "warning", message: "" })).toBe("yellow");
+  });
+});

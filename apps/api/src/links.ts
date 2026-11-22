@@ -256,3 +256,76 @@ export async function decideLink(request: Request, env: Env, id: string, reviewe
   ]);
   return json({ ok: true, status: "attached", opportunity: opp.slug });
 }
+
+// ------------------------------------------------------------------ similar documents (reader → API)
+
+/** Share of the smaller set's words that the other also has. */
+export function overlap(a: Set<string>, b: Set<string>): number {
+  if (!a.size || !b.size) return 0;
+  let n = 0;
+  for (const t of a) if (b.has(t)) n++;
+  return n / Math.min(a.size, b.size);
+}
+
+const SimilarRequest = z.object({
+  source_url: z.string().url(),
+  items: z.array(z.object({ key: z.string().max(600), url: z.string().url(), text: z.string().max(400) })).max(100),
+});
+
+/**
+ * POST /api/ingest/similar: for each link the reader is about to read, a document of the same
+ * organisation that is probably the same notice (same advertisement number, or ≥90% of title words),
+ * so no AI is spent on a copy under a new address.
+ */
+export async function similarDocuments(request: Request, env: Env): Promise<Response> {
+  if (!env.INGEST_HMAC_SECRET) return problem(503, "ingest is not configured");
+  const raw = await readBody(request, 256 * 1024);
+  if (raw === null) return problem(413, "body too large");
+  const check = await verifySignature(env.INGEST_HMAC_SECRET, raw, request.headers.get(TIMESTAMP_HEADER), request.headers.get(SIGNATURE_HEADER));
+  if (!check.ok) return problem(401, check.reason);
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    return problem(400, "body is not JSON");
+  }
+  const parsed = SimilarRequest.safeParse(body);
+  if (!parsed.success) return problem(422, "invalid request");
+  const src = await env.DB.prepare("SELECT organization_id FROM source WHERE url = ?").bind(parsed.data.source_url).first<{ organization_id: string }>();
+  if (!src) return json({ matches: {} });
+
+  const docs = (
+    await env.DB.prepare(
+      `SELECT d.url, d.kind, d.advt_no, (SELECT v.draft_json FROM document_version v WHERE v.document_id = d.id ORDER BY v.version_no DESC LIMIT 1) AS draft_json
+         FROM document d JOIN source s ON s.id = d.source_id WHERE s.organization_id = ?`,
+    )
+      .bind(src.organization_id)
+      .all<{ url: string; kind: string; advt_no: string | null; draft_json: string | null }>()
+  ).results.map((d) => {
+    let title = "";
+    try {
+      const t = d.draft_json ? JSON.parse(d.draft_json).title : "";
+      title = typeof t === "string" ? t : (t?.value ?? "");
+    } catch {
+      /* no title */
+    }
+    return { ...d, title, words: tokens(title), code: d.advt_no ? d.advt_no.toUpperCase().replace(/[\s._-]+/g, "/") : null };
+  });
+
+  const matches: Record<string, { document_url: string; kind: string; reason: string }> = {};
+  for (const item of parsed.data.items) {
+    const hay = `${item.text} ${decodeURIComponent(item.url).replace(/[_/.-]+/g, " ")}`;
+    const codes = advtCodes(hay.toUpperCase());
+    const words = tokens(item.text);
+    for (const d of docs) {
+      if (d.url === item.url) continue;
+      const sameCode = d.code && [...codes].some((c) => c === d.code || (d.code!.length >= 5 && (c.includes(d.code!) || d.code!.includes(c))));
+      const sameTitle = d.words.size >= 3 && words.size >= 3 && overlap(words, d.words) >= 0.9;
+      if (sameCode || sameTitle) {
+        matches[item.key] = { document_url: d.url, kind: d.kind, reason: sameCode ? `same advertisement number ${d.advt_no}` : "same title words" };
+        break;
+      }
+    }
+  }
+  return json({ matches });
+}

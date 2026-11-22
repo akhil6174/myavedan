@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import os
 import sys
 import time
@@ -24,9 +25,11 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import looks_outdated, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
+from .discover import looks_outdated, read_priority, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
+from .normalise import page_text
+from .crosscheck import crosscheck
 from .sections import coverage_report, section_map
 from .stages import parse_pdf
 
@@ -110,7 +113,8 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     digest = sha256_hex(data)
     started = time.time()
     parsed = parse_pdf(data)
-    pages = {p.number: p.text for p in parsed}
+    # Hindi digits/terms normalised and tables added as Markdown; used for reading AND fact-checking.
+    pages = {p.number: page_text(p.text, p.tables) for p in parsed}
     unread = [p.number for p in parsed if len(p.text.strip()) < 40]
     coverage = coverage_report(section_map([p.text for p in parsed]))
 
@@ -122,6 +126,7 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
+    flags += crosscheck(draft, pages)  # second, rule-based read of last date, vacancies, age, fee
     read_kind = extraction.get("document_kind")
     stale = outdated_reason(draft, read_kind if read_kind in KINDS else kind, today)
     if stale:
@@ -247,7 +252,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     for q in take_queued(args.dry_run):
         src = srcs_by_url.get(q["source_url"])
         if src:
-            todo.append(Candidate(src["id"], q["url"], q.get("link_text", "")[:200], q["kind"], q["url"]))
+            todo.append(Candidate(src["id"], q["url"], q.get("link_text", "")[:200], q["kind"], "queued:" + q["url"]))
     counts["from_unsure"] = len(todo)
 
     for s in sources:
@@ -318,8 +323,10 @@ def cmd_discover(args: argparse.Namespace) -> int:
             if v.get("status") == "backlog" and v.get("kind") != "apply_link" and (not args.sources or v["source"] in args.sources)
             and not looks_outdated(v.get("text", ""), v.get("url", key), today)
         ),
-        key=lambda c: -notice_score(c.text, c.url, year),
+        key=lambda c: read_priority(c, today, from_backlog=True),
     )
+    todo.sort(key=lambda c: read_priority(c, today))
+    todo = drop_probable_copies(todo, state, now, counts, args.dry_run)
     print(json.dumps({"new_notices": len(todo), "reading_new": want_new, "reading_backlog": want_backlog, "gemini_calls_today": used, "daily_limit_left": allowed}))
 
     srcs = load_sources()
@@ -422,6 +429,49 @@ def send_links(found: list[tuple[dict, Candidate]], dry_run: bool) -> bool:
     except Exception as e:  # keep them as pending; the next run sends them again
         print(json.dumps({"links_send_failed": str(e)[:200]}))
         return False
+
+
+REVISION = re.compile(r"corrigend|addend|amendment|revised|revision|extension|extended|modif", re.I)
+
+
+def drop_probable_copies(todo: list[Candidate], state: State, now: str, counts: dict, dry_run: bool) -> list[Candidate]:
+    """Before any download or AI call: a link whose advertisement number or title matches a document
+    we already have is probably the same notice under a new address. Revisions (corrigendum, date
+    extension...) are still read, as corrigenda. Probable copies are recorded, never silently lost."""
+    url, secret = os.environ.get("INGEST_URL"), os.environ.get("INGEST_HMAC_SECRET")
+    if dry_run or not url or not secret or not todo:
+        return todo
+    by_source: dict[str, list[Candidate]] = {}
+    for c in todo:
+        if not c.key.startswith("queued:"):
+            by_source.setdefault(c.source_id, []).append(c)
+    sources = load_sources()
+    matches: dict[str, dict] = {}
+    for sid, cands in by_source.items():
+        try:
+            res = post_draft(url.rstrip("/") + "/similar", secret, {
+                "source_url": sources[sid]["url"],
+                "items": [{"key": c.key, "url": c.url, "text": c.text or c.url} for c in cands[:100]],
+            })
+            matches.update(res.get("matches", {}))
+        except Exception as e:  # check not available (older API): read everything as before
+            print(json.dumps({"similar_check_failed": str(e)[:200]}))
+            return todo
+    kept, copies = [], 0
+    for c in todo:
+        m = matches.get(c.key)
+        if not m:
+            kept.append(c)
+        elif REVISION.search(c.text or "") or c.kind == "corrigendum":
+            c.kind = "corrigendum"
+            kept.append(c)
+        else:
+            copies += 1
+            state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "probable_copy",
+                                      "copy_of": m["document_url"], "reason": m["reason"], "first_seen": now}
+            print(json.dumps({"probable_copy": c.url, "of": m["document_url"], "reason": m["reason"]}))
+    counts["probable_copies"] = copies
+    return kept
 
 
 def site_report(source: dict, report: dict, new: int) -> dict:

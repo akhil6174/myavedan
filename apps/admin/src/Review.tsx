@@ -169,8 +169,8 @@ function FieldCard({
         {field.grounded === false && <span class="font-semibold text-bad">✕ quote not found on that page</span>}
       </div>
       {field.flags.map((f) => (
-        <p key={f.code + f.field} class={`text-xs ${f.severity === "error" ? "font-semibold text-bad" : "text-warn"}`}>
-          {f.severity === "error" ? "Error" : "Warning"}: {f.message}
+        <p key={f.code + f.field} class={`text-xs ${(f.tier ?? (f.severity === "error" ? "red" : "yellow")) === "red" ? "font-semibold text-bad" : "text-warn"}`}>
+          {(f.tier ?? (f.severity === "error" ? "red" : "yellow")) === "red" ? "Check" : "Note"}: {f.message}
         </p>
       ))}
 
@@ -259,7 +259,8 @@ function DecisionBar({ detail, id, onDone, onKind }: { detail: VersionDetail; id
   const kind = detail.version.document_kind;
   const isUpdate = UPDATE_KINDS.includes(kind);
   const [opps, setOpps] = useState<Opp[] | null>(null);
-  const [parent, setParent] = useState("");
+  const best = detail.suggestions?.[0];
+  const [parent, setParent] = useState(best?.id ?? "");
   const [q, setQ] = useState("");
   useEffect(() => {
     if (isUpdate && opps === null) api.opportunities().then((r) => setOpps(r.items)).catch(() => setOpps([]));
@@ -338,7 +339,14 @@ function DecisionBar({ detail, id, onDone, onKind }: { detail: VersionDetail; id
             </select>
           </label>
           {isUpdate ? (
-            <p class="text-ink-3">An update, not a new opening: choose the recruitment it belongs to. It appears on that page and in Results / Admit cards.</p>
+            <p class="text-ink-3">
+              An update, not a new opening: choose the recruitment it belongs to. It appears on that page and in Results / Admit cards.
+              {best && (
+                <span class="mt-1 block text-ok">
+                  Suggested: <strong>{best.title}</strong> ({best.why}). Check it, then press Attach.
+                </span>
+              )}
+            </p>
           ) : kind === "other" ? (
             <p class="text-ink-3">Not published on the site. Reject it, or change the type.</p>
           ) : (
@@ -382,6 +390,11 @@ function DecisionBar({ detail, id, onDone, onKind }: { detail: VersionDetail; id
               <input class="field w-44 py-1.5 text-sm" placeholder="Search recruitments" value={q} onInput={(e) => setQ((e.target as HTMLInputElement).value)} aria-label="Search recruitments" />
               <select class="field w-72 py-1.5 text-sm" value={parent} onChange={(e) => setParent((e.target as HTMLSelectElement).value)} aria-label="Recruitment">
                 <option value="">{opps === null ? "Loading…" : opps.length ? "Choose the recruitment…" : "No published recruitments yet"}</option>
+                {(detail.suggestions ?? []).filter((s) => !matches.some((o) => o.id === s.id)).map((s) => (
+                  <option key={s.id} value={s.id}>
+                    ★ {s.title}
+                  </option>
+                ))}
                 {matches.map((o) => (
                   <option key={o.id} value={o.id}>
                     {o.title}
@@ -482,20 +495,31 @@ export function Review({ id }: { id: string }) {
         <NoticePane detail={detail} focus={focus} onPage={(p) => setFocus({ page: p, snippet: "" })} />
 
         <div class="min-h-0 overflow-auto pr-1">
-          {detail.flags.length > 0 && (
-            <div class="notice mb-4">
-              <p class="font-semibold text-ink">Automatic checks found {detail.flags.length} issue{detail.flags.length === 1 ? "" : "s"}</p>
-              <ul class="mt-1 list-disc pl-5 text-sm">
-                {detail.flags.map((f) => (
-                  <li key={f.field + f.code} class={f.severity === "error" ? "text-bad" : ""}>
-                    <a href={`#/review/${id}`} onClick={(e) => (e.preventDefault(), document.getElementById(`f-${f.field}`)?.scrollIntoView({ block: "center" }))}>
-                      {f.field}
-                    </a>
-                    : {f.message}
-                  </li>
-                ))}
-              </ul>
-            </div>
+          {(["red", "yellow"] as const).map((tier) => {
+            const list = detail.flags.filter((f) => (f.tier ?? (f.severity === "error" ? "red" : "yellow")) === tier);
+            if (!list.length) return null;
+            return (
+              <div key={tier} class={`notice mb-4 ${tier === "red" ? "border-bad bg-bad-soft" : ""}`}>
+                <p class="font-semibold text-ink">
+                  {tier === "red"
+                    ? `Must check against the PDF (${list.length})`
+                    : `For information (${list.length})`}
+                </p>
+                <ul class="mt-1 list-disc pl-5 text-sm">
+                  {list.map((f) => (
+                    <li key={f.field + f.code + f.message} class={tier === "red" ? "text-bad" : ""}>
+                      <a href={`#/review/${id}`} onClick={(e) => (e.preventDefault(), document.getElementById(`f-${f.field}`)?.scrollIntoView({ block: "center" }))}>
+                        {f.field}
+                      </a>
+                      : {f.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })}
+          {detail.flags.length > 0 && !detail.flags.some((f) => (f.tier ?? (f.severity === "error" ? "red" : "yellow")) === "red") && (
+            <p class="mb-4 text-sm text-ok">No red flags: only information notes. Check the critical fields and approve.</p>
           )}
           {GROUPS.map((g) => {
             const fields = detail.fields.filter((f) => f.group === g.id);

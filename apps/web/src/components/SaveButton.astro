@@ -1,0 +1,20 @@
+---
+/** Save / unsave a recruitment on this device (no login). The page script in Base.astro does the work. */
+interface Props {
+  slug: string;
+  size?: "sm" | "md";
+}
+const { slug, size = "sm" } = Astro.props;
+---
+
+<button
+  type="button"
+  class:list={["save-btn relative z-10 inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface font-semibold text-ink-2 hover:border-brand hover:text-brand", size === "sm" ? "px-2.5 py-1.5 text-xs" : "px-4 py-2.5 text-sm"]}
+  data-save={slug}
+  aria-pressed="false"
+>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true">
+    <path d="M6 3h12a1 1 0 0 1 1 1v17l-7-4-7 4V4a1 1 0 0 1 1-1z"></path>
+  </svg>
+  <span data-save-label>Save</span>
+</button>

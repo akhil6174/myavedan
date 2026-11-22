@@ -3,7 +3,8 @@ const links = [
   { href: "/explore/", label: "Openings" },
   { href: "/results/", label: "Results" },
   { href: "/admit-cards/", label: "Admit cards" },
-  { href: "/about/", label: "About" },
+  { href: "/can-i-apply/", label: "Can I apply?" },
+  { href: "/saved/", label: "Saved" },
 ];
 const path = Astro.url.pathname;
 const current = (href: string) => path === href || (href !== "/" && path.startsWith(href));

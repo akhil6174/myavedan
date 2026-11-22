@@ -83,8 +83,8 @@ export function Queue() {
                     </td>
                     <td class={`whitespace-nowrap text-sm ${d.tone}`}>{d.text}</td>
                     <td class="whitespace-nowrap text-sm">
-                      {item.errors > 0 && <span class="state state-rejected mr-1">{item.errors} error{item.errors === 1 ? "" : "s"}</span>}
-                      {item.warnings > 0 && <span class="state state-pending">{item.warnings} warning{item.warnings === 1 ? "" : "s"}</span>}
+                      {item.errors > 0 && <span class="state state-rejected mr-1">{item.errors} to check</span>}
+                      {item.warnings > 0 && <span class="state state-edited">{item.warnings} for info</span>}
                       {item.errors === 0 && item.warnings === 0 && <span class="text-ink-3">Clean</span>}
                     </td>
                     <td class="num whitespace-nowrap text-sm text-ink-3">{formatDateTime(toIst(item.received_at))}</td>
