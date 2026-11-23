@@ -108,3 +108,14 @@ describe("queue priority", () => {
     expect([closed, unknown, later, soon].sort((a, b) => a - b)).toEqual([soon, later, closed, unknown]);
   });
 });
+
+describe("category seats", () => {
+  it("are a separate critical field when the notice breaks vacancies down", () => {
+    const d = draftFrom() as any;
+    d.posts[0].seats = [{ group: "UR", count: 5, horizontal: false }, { group: "OBC", count: 3, horizontal: false }];
+    const fields = reviewFields(d);
+    const seats = fields.find((f) => f.key === "posts.0.seats");
+    expect(seats?.critical).toBe(true);
+    expect((fields.find((f) => f.key === "posts.0")?.value as any).seats).toBeUndefined();
+  });
+});

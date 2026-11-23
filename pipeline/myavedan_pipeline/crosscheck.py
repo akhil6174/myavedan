@@ -85,6 +85,16 @@ def crosscheck(draft: dict, pages: dict[int, str]) -> list[dict]:
         flags.append({"field": "total_vacancies", "code": "vacancies_dont_add_up", "severity": "error",
                       "message": f"Post-wise vacancies add up to {sum(counts)}, but the total is {total}."})
 
+    # Category-wise seats must add up to the post's vacancies (horizontal quotas sit inside them).
+    for i, post in enumerate(draft.get("posts") or []):
+        seats = [s for s in post.get("seats") or [] if not s.get("horizontal")]
+        vac = post.get("vacancies")
+        if seats and isinstance(vac, int) and sum(s["count"] for s in seats) != vac:
+            listed = ", ".join("%s %d" % (s["group"], s["count"]) for s in seats)
+            total = sum(s["count"] for s in seats)
+            flags.append({"field": f"posts.{i}", "code": "seats_dont_add_up", "severity": "error",
+                          "message": f"Category seats ({listed}) add up to {total}, but the post has {vac} vacancies. Check the vacancy table."})
+
     # Age limits: only when the notice states one clear range.
     ranges = {(int(a), int(b)) for a, b in _AGE.findall(text) if int(a) < int(b)}
     if len(ranges) == 1:

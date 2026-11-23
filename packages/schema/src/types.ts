@@ -131,10 +131,21 @@ export const OtherRule = z.object({
 
 export const Rule = z.discriminatedUnion("kind", [AgeRule, QualificationRule, OtherRule]);
 
+/** Seats for one group within a post: a category (UR, OBC, SC...) or a horizontal quota (PwBD, ESM, women...). */
+export const Seats = z.object({
+  group: z.string().min(1).max(40),
+  count: z.number().int().nonnegative(),
+  /** Horizontal quotas (PwBD, ex-servicemen, women, sports...) are counted inside the category seats. */
+  horizontal: z.boolean().default(false),
+});
+
 export const Post = z.object({
   id: z.string().regex(/^[a-z0-9-]+$/),
   name: z.string().min(1),
   vacancies: z.number().int().nonnegative().nullable(),
+  /** Category-wise seats as given in the notice's vacancy table; empty when the notice doesn't break them down. */
+  seats: z.array(Seats).default([]),
+  seats_evidence: Evidence.nullable().optional(),
   location: z.string().optional(),
   pay: z.string().optional(),
   rules: z.array(Rule),
@@ -266,6 +277,7 @@ export const Snapshot = z.object({
 export type Evidence = z.infer<typeof Evidence>;
 export type Jurisdiction = z.infer<typeof Jurisdiction>;
 export type Category = z.infer<typeof Category>;
+export type Seats = z.infer<typeof Seats>;
 export type QualificationLevel = z.infer<typeof QualificationLevel>;
 export type DateKind = z.infer<typeof DateKind>;
 export type ImportantDate = z.infer<typeof ImportantDate>;

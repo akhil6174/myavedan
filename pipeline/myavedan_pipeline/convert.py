@@ -160,10 +160,19 @@ def to_draft(ex: dict, *, organization: dict, notice_url: str, official_page: st
             if ev and (c.get("label") or "").strip():
                 rules.append({"kind": "other", "label": c["label"].strip()[:60], "stated": (c.get("stated") or c["label"]).strip(), "blocking": bool(c.get("blocking")), "evidence": ev})
         vac = p.get("vacancies")
+        seats = [
+            {"group": " ".join(str(x.get("group") or "").split())[:40], "count": x["count"], "horizontal": bool(x.get("horizontal"))}
+            for x in p.get("seats") or []
+            if isinstance(x.get("count"), int) and x["count"] >= 0 and str(x.get("group") or "").strip()
+            and not str(x.get("group")).strip().lower().startswith("total")
+        ]
+        seats_ev = _evidence({"page": p.get("seats_page"), "snippet": p.get("seats_snippet")}) if seats else None
         posts.append({
             "id": pid,
             "name": (p.get("name") or "Post").strip(),
             "vacancies": vac if isinstance(vac, int) and vac >= 0 else None,
+            "seats": seats,
+            **({"seats_evidence": seats_ev} if seats_ev else {}),
             **({"location": p["location"].strip()} if (p.get("location") or "").strip() else {}),
             **({"pay": p["pay"].strip()} if (p.get("pay") or "").strip() else {}),
             "rules": rules,

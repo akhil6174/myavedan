@@ -40,6 +40,18 @@ const feeRange =
 const events = [...o.events].sort((a, b) => b.date.localeCompare(a.date));
 const multiPost = o.posts.length > 1;
 
+// Category columns in the usual order, then any others the notice uses (MBC, BC-A...); horizontal quotas last.
+const ORDER = ["UR", "GEN", "GENERAL", "EWS", "OBC", "BC", "MBC", "SC", "ST"];
+const rank = (g: string) => {
+  const k = ORDER.indexOf(g.toUpperCase());
+  return k === -1 ? ORDER.length : k;
+};
+const allSeats = o.posts.flatMap((p) => p.seats);
+const seatGroups = {
+  main: [...new Set(allSeats.filter((x) => !x.horizontal).map((x) => x.group))].sort((a, b) => rank(a) - rank(b)),
+  within: [...new Set(allSeats.filter((x) => x.horizontal).map((x) => x.group))],
+};
+
 const RELAX_LABEL: Record<string, string> = { ESM: "Ex-servicemen", PwBD: "PwBD" };
 const jump = [
   ["summary", "Summary"],
@@ -177,6 +189,46 @@ const jump = [
               </tbody>
             </table>
           </div>
+          {
+            seatGroups.main.length > 0 && (
+              <>
+                <h3 class="mb-2 mt-6 font-display text-lg font-bold">Seats by category</h3>
+                <div class="table-wrap">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th scope="col">Post</th>
+                        {seatGroups.main.map((g) => <th scope="col" class="text-right">{g}</th>)}
+                        <th scope="col" class="text-right">Total</th>
+                        {seatGroups.within.map((g) => <th scope="col" class="text-right">{g}*</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {
+                        o.posts
+                          .filter((p) => p.seats.length > 0)
+                          .map((p) => {
+                            const count = (g: string) => p.seats.find((x) => x.group === g)?.count;
+                            const total = p.seats.filter((x) => !x.horizontal).reduce((n, x) => n + x.count, 0);
+                            return (
+                              <tr>
+                                <td class="font-medium">{p.name}</td>
+                                {seatGroups.main.map((g) => <td class="num text-right">{count(g) ?? "–"}</td>)}
+                                <td class="num text-right font-semibold">{total}</td>
+                                {seatGroups.within.map((g) => <td class="num text-right text-ink-2">{count(g) ?? "–"}</td>)}
+                              </tr>
+                            );
+                          })
+                      }
+                    </tbody>
+                  </table>
+                </div>
+                {seatGroups.within.length > 0 && (
+                  <p class="mt-2 text-xs text-ink-3">* {seatGroups.within.join(", ")} seats are counted within the category seats, not in addition to them.</p>
+                )}
+              </>
+            )
+          }
         </section>
 
         <section id="eligibility" aria-labelledby="elig-h">
