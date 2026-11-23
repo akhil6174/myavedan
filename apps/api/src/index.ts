@@ -5,6 +5,8 @@
  *   GET  /api/health       database reachability
  *   POST /api/ingest       pipeline drafts → D1 (HMAC-signed; the only write path from the pipeline)
  *   POST /api/ingest/known which file fingerprints are already stored (HMAC-signed)
+ *   /api/auth/*  (API host) visitor sign-in for myavedan.in (Google); cookies shared across *.myavedan.in
+ *   GET|PUT|DELETE /api/me  the signed-in visitor's profile, applied and saved recruitments
  *   POST /api/ingest/run   the reader's report after each run (HMAC-signed)
  *   POST /api/ingest/similar probably-same documents for links the reader is about to read (HMAC-signed)
  *   POST /api/ingest/queued unsure links a reviewer asked the reader to read (HMAC-signed)
@@ -20,17 +22,19 @@
  */
 import type { Env } from "./env";
 import { reviewerFor } from "./access";
-import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
+import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured, siteAuth } from "./auth";
 import { bulkApprove, corrections, decision, fieldDecision, listPublished, queue, setKind, setRole, updateCorrection, users, version, withdrawOpportunity } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, knownHashes, snapshot } from "./routes";
+import { me, siteCors, withCors } from "./me";
 import { decideUnsure, healthReport, listUnsure, receiveRun, takeQueued } from "./health";
 import { publishComplete, publishStatus, runPublishTrigger } from "./publish";
 import { decideLink, listLinks, listOpportunities, receiveLinks, similarDocuments } from "./links";
 
 function isAdminHost(request: Request, env: Env): boolean {
   const host = new URL(request.url).hostname;
-  return host === env.ADMIN_HOST || host === "localhost" || host === "127.0.0.1";
+  // Locally: localhost is the console, 127.0.0.1 the visitor side (SITE_AUTH_URL).
+  return host === env.ADMIN_HOST || host === "localhost";
 }
 
 async function admin(request: Request, env: Env, ctx: ExecutionContext, path: string): Promise<Response> {
@@ -108,9 +112,16 @@ export default {
 
     try {
       if (pathname.startsWith("/api/auth/")) {
-        if (!isAdminHost(request, env)) return problem(404, "not found");
         if (!isAuthConfigured(env)) return problem(503, "sign-in is not configured");
-        return await auth(env).handler(request);
+        if (isAdminHost(request, env)) return await auth(env).handler(request);
+        // Visitor sign-in for myavedan.in, on the API host.
+        if (method === "OPTIONS") return new Response(null, { status: 204, headers: siteCors(request, env) });
+        return withCors(await siteAuth(env).handler(request), request, env);
+      }
+      if (pathname === "/api/me") {
+        if (isAdminHost(request, env)) return problem(404, "not found");
+        if (method === "OPTIONS") return new Response(null, { status: 204, headers: siteCors(request, env) });
+        return withCors(await me(request, env), request, env);
       }
       if (pathname.startsWith("/api/admin/")) {
         if (!isAdminHost(request, env)) return problem(404, "not found");

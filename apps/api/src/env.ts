@@ -26,6 +26,10 @@ export interface Env {
   // ---- sign-in (Better Auth, as on TrutiAI) ----
   /** Public URL of the review console, e.g. https://admin-staging.myavedan.in. */
   AUTH_URL?: string;
+  /** Public URL of this API for visitor sign-in on the site, e.g. https://api.myavedan.in. */
+  SITE_AUTH_URL?: string;
+  /** Cookie name prefix for visitor sessions (different per environment). */
+  SITE_COOKIE_PREFIX?: string;
   /** Random secret that signs sessions. Required outside local development. */
   BETTER_AUTH_SECRET?: string;
   GOOGLE_CLIENT_ID?: string;

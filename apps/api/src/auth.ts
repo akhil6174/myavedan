@@ -66,6 +66,49 @@ function build(env: Env) {
   });
 }
 
+/**
+ * Visitor sign-in on myavedan.in, served by this API on its own host (api.myavedan.in). Same Google app
+ * and user table as the console, but its own cookies, shared across *.myavedan.in so the site can use
+ * them. Visitors are 'reader' users: they never get console access.
+ */
+function buildSite(env: Env) {
+  const baseURL = env.SITE_AUTH_URL ?? "http://127.0.0.1:8787";
+  const secure = baseURL.startsWith("https://");
+  const origins = (env.ALLOWED_ORIGINS ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return betterAuth({
+    appName: "MyAvedan",
+    baseURL,
+    basePath: "/api/auth",
+    secret: env.BETTER_AUTH_SECRET || "dev-only-secret-change-me-dev-only-secret-change-me",
+    trustedOrigins: [baseURL, ...origins],
+    database: drizzleAdapter(drizzle(env.DB, { schema }), { provider: "sqlite", schema }),
+    socialProviders: isGoogleConfigured(env)
+      ? { google: { clientId: env.GOOGLE_CLIENT_ID!, clientSecret: env.GOOGLE_CLIENT_SECRET!, prompt: "select_account" as const } }
+      : {},
+    emailAndPassword: { enabled: isDevLogin(env), requireEmailVerification: false },
+    session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24, cookieCache: { enabled: true, maxAge: 5 * 60 } },
+    user: { additionalFields: { role: { type: "string", required: false, defaultValue: "reader", input: false } } },
+    databaseHooks: {
+      user: {
+        create: {
+          before: async (u) => ({ data: { ...u, role: adminEmails(env).includes((u.email ?? "").toLowerCase()) ? "admin" : "reader" } }),
+        },
+      },
+    },
+    advanced: {
+      cookiePrefix: env.SITE_COOKIE_PREFIX ?? "myavedan_site",
+      useSecureCookies: secure,
+      ...(secure ? { crossSubDomainCookies: { enabled: true, domain: ".myavedan.in" } } : {}),
+    },
+  });
+}
+
+let cachedSite: { env: Env; auth: ReturnType<typeof buildSite> } | undefined;
+export function siteAuth(env: Env) {
+  if (!cachedSite || cachedSite.env !== env) cachedSite = { env, auth: buildSite(env) };
+  return cachedSite.auth;
+}
+
 let cached: { env: Env; auth: ReturnType<typeof build> } | undefined;
 
 /** One Better Auth instance per isolate (the env object is stable within an isolate). */

@@ -162,3 +162,15 @@ describe("verdict", () => {
     ])).toBe("not_eligible");
   });
 });
+
+import { matchSubject } from "./index";
+
+describe("subjects", () => {
+  it("matches the applicant's degree and subject against what the notice accepts", () => {
+    expect(matchSubject(["Civil Engineering"], ["B.Tech", "Civil Engineering"])).not.toBeNull();
+    expect(matchSubject(["B.E./B.Tech in Civil"], ["B.Tech", "Civil Engineering"])).not.toBeNull();
+    expect(matchSubject(["Mathematics"], ["Science (Maths)"])).not.toBeNull();
+    expect(matchSubject(["Civil Engineering"], ["B.Tech", "Mechanical Engineering"])).toBeNull();
+    expect(matchSubject(["Biology"], ["Science (Maths)"])).toBeNull();
+  });
+});
