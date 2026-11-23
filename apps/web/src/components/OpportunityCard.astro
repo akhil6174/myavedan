@@ -50,6 +50,7 @@ const tile = /police|army|navy|air force|defence|cisf|crpf|bsf|itbp|ssb|guard/.t
     </div>
     <p class="line-clamp-2 text-sm leading-relaxed text-ink-3">{o.summary.en}</p>
     <div class="flex flex-wrap gap-2">
+      <span class="elig" data-elig={o.slug} hidden></span>
       <StatusPill o={o} />
       {o.total_vacancies !== null && <span class="tag">{o.total_vacancies.toLocaleString("en-IN")} posts</span>}
       {pay && <span class="tag tag-teal">{pay.length > 34 ? `${pay.slice(0, 32)}…` : pay}</span>}

@@ -5,6 +5,7 @@ const links = [
   { href: "/admit-cards/", label: "Admit cards" },
   { href: "/can-i-apply/", label: "Can I apply?" },
   { href: "/saved/", label: "Saved" },
+  { href: "/profile/", label: "My profile" },
 ];
 const path = Astro.url.pathname;
 const current = (href: string) => path === href || (href !== "/" && path.startsWith(href));
@@ -32,6 +33,7 @@ const current = (href: string) => path === href || (href !== "/" && path.startsW
             class:list={["no-underline transition-colors", current(l.href) ? "text-brand" : "text-ink-2 hover:text-brand"]}
           >
             {l.label}
+            {l.href === "/profile/" && <span data-updates-count hidden class="ml-1 rounded-full bg-accent px-1.5 text-xs font-bold text-ink" />}
           </a>
         ))
       }

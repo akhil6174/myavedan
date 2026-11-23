@@ -120,6 +120,11 @@ const jump = [
           <a class="btn btn-primary" href="#eligibility">Check my eligibility</a>
           <a class="btn" href={`/opportunity/${o.slug}/calendar.ics`} download={`${o.slug}.ics`}>Add dates to calendar</a>
           <SaveButton slug={o.slug} size="md" />
+          <label class="relative z-10 inline-flex cursor-pointer items-center gap-2 rounded-lg border border-line bg-surface px-4 py-2.5 text-sm font-semibold text-ink-2 has-[:checked]:border-[#99f6e4] has-[:checked]:bg-brand-soft has-[:checked]:text-brand-ink">
+            <input type="checkbox" data-applied={o.slug} class="h-4 w-4 accent-[var(--brand)]" />
+            I've applied
+          </label>
+          <span class="elig self-center" data-elig={o.slug} hidden></span>
           <a class="btn" href={pdf} target="_blank" rel="noopener">Official notice (PDF) <span aria-hidden="true">↗</span></a>
           {
             o.links.apply && (

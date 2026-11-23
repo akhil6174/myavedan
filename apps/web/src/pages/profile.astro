@@ -1,0 +1,20 @@
+---
+import Base from "../layouts/Base.astro";
+import ProfilePage from "../components/ProfilePage";
+import { statesInUse } from "../lib/snapshot";
+---
+
+<Base title="My profile" description="Your details for eligibility labels, and updates for the recruitments you applied to. Kept on your device only.">
+  <section class="hero-band border-b border-line">
+    <div class="wrap py-8">
+      <h1 class="font-display text-3xl font-bold sm:text-4xl">My profile</h1>
+      <p class="mt-2 max-w-2xl text-ink-2">
+        Fill your details once and every job card shows whether you can apply. Mark recruitments you applied to, and their admit cards,
+        answer keys and results appear here. Everything stays on this device: no account, nothing sent.
+      </p>
+    </div>
+  </section>
+  <div class="wrap py-8">
+    <ProfilePage client:load states={statesInUse()} />
+  </div>
+</Base>
