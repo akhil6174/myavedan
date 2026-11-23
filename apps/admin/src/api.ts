@@ -172,7 +172,19 @@ export interface UnsureLink {
   organization: string | null;
 }
 
+export interface PublishedItem {
+  id: string;
+  slug: string;
+  title: string;
+  advt_no: string | null;
+  apply_end: string | null;
+  updated_at: string;
+  organization: string | null;
+}
+
 export const api = {
+  published: () => call<{ items: PublishedItem[] }>("/published"),
+  withdraw: (id: string, reason: string) => call<{ ok: true; slug: string }>(`/published/${id}/withdraw`, { method: "POST", body: { reason } }),
   health: () => call<HealthReport>("/health"),
   unsure: () => call<{ items: UnsureLink[] }>("/unsure"),
   unsureRead: (id: string, kind: string) => call<{ ok: true }>(`/unsure/${id}`, { method: "POST", body: { action: "read", kind } }),

@@ -16,6 +16,7 @@ import { Opportunity } from "@myavedan/schema";
 import type { Env } from "./env";
 import type { Reviewer } from "./access";
 import { istNow } from "./crypto";
+import { adminEmails } from "./auth";
 import { suggest, type Candidate, type Suggestion } from "./links";
 import { json, problem, readBody } from "./http";
 import {
@@ -414,6 +415,10 @@ export async function setRole(request: Request, env: Env, id: string, actor: Rev
   if (target.email.toLowerCase() === actor.email && parsed.data.role !== "admin") {
     return problem(409, "you can't remove your own admin role");
   }
+  // Owners (ADMIN_EMAILS) are always admin: no other admin can demote them.
+  if (adminEmails(env).includes(target.email.toLowerCase()) && parsed.data.role !== "admin") {
+    return problem(409, `${target.email} is an owner and always stays admin`);
+  }
   await env.DB.batch([
     env.DB.prepare("UPDATE user SET role = ?, updated_at = unixepoch() WHERE id = ?").bind(parsed.data.role, id),
     // Signing them out makes a demotion take effect immediately.
@@ -499,4 +504,52 @@ function draftText(v: unknown): string {
     if (typeof o.en === "string") return o.en;
   }
   return "";
+}
+
+// ------------------------------------------------------------------ published notices (admins only)
+
+export async function listPublished(env: Env): Promise<Response> {
+  const rows = await env.DB.prepare(
+    `SELECT o.id, o.slug, o.title, o.advt_no, o.apply_end, o.updated_at, g.name AS organization
+       FROM opportunity o LEFT JOIN organization g ON g.id = o.organization_id
+      WHERE o.publish_state = 'published' ORDER BY o.updated_at DESC LIMIT 2000`,
+  ).all();
+  return json({ items: rows.results });
+}
+
+const Withdraw = z.object({ reason: z.string().min(3).max(500) });
+
+/**
+ * Take a published notice off the site. Nothing is deleted: it becomes 'withdrawn' (its versions and
+ * review history stay), and the site is rebuilt at once without it. Re-approving a new version
+ * publishes it again.
+ */
+export async function withdrawOpportunity(request: Request, env: Env, id: string, actor: Reviewer, onDone: () => void): Promise<Response> {
+  const parsed = await body(request, Withdraw);
+  if (!parsed.ok) return parsed.res;
+  const opp = await env.DB.prepare("SELECT id, slug, current_version_id FROM opportunity WHERE id = ? AND publish_state = 'published'")
+    .bind(id)
+    .first<{ id: string; slug: string; current_version_id: string | null }>();
+  if (!opp) return problem(404, "published notice not found");
+  const now = istNow();
+  await env.DB.batch([
+    env.DB.prepare("UPDATE opportunity SET publish_state = 'withdrawn', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").bind(id),
+    ...(opp.current_version_id
+      ? [
+          env.DB.prepare("INSERT INTO review_event (id, document_version_id, reviewer, action, reason) VALUES (?, ?, ?, 'withdraw', ?)").bind(
+            crypto.randomUUID(),
+            opp.current_version_id,
+            actor.email,
+            parsed.data.reason,
+          ),
+          // An urgent publish entry rebuilds the site straight away without this notice.
+          env.DB.prepare(
+            "INSERT INTO publish_queue (document_version_id, queued_at, urgent) VALUES (?, ?, 1) ON CONFLICT(document_version_id) DO UPDATE SET queued_at = excluded.queued_at, urgent = 1, batch_id = NULL",
+          ).bind(opp.current_version_id, now),
+        ]
+      : []),
+  ]);
+  console.log(JSON.stringify({ audit: "withdraw", by: actor.email, slug: opp.slug, reason: parsed.data.reason }));
+  onDone();
+  return json({ ok: true, slug: opp.slug, state: "withdrawn" });
 }
