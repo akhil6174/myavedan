@@ -4,6 +4,8 @@
 # Settings come from %USERPROFILE%\.myavedan\.env (never committed):
 #   GEMINI_API_KEY=...
 #   INGEST_HMAC_SECRET=...      (production ingest secret)
+# New notices are read every run. Of the notices already on the sites before launch, only those from
+# November 2026 are kept in the backlog (read 15 per run, sites taking turns); older ones are left alone.
 # Each run writes a log to %USERPROFILE%\.myavedan\logs\ (the last 60 are kept).
 param(
   [int]$MaxNew = 15,
