@@ -27,6 +27,8 @@ export interface Applicant {
   exServiceman?: boolean;
   /** Highest qualification, finished or in its final year. */
   qualification?: QualificationLevel | null;
+  /** Streams, degrees and subjects the applicant studied, e.g. ["Science (Maths)", "B.Tech", "Civil Engineering"]. */
+  subjects?: string[];
   /** The highest qualification's result is still awaited. */
   resultAwaited?: boolean;
 }
@@ -247,6 +249,12 @@ export function evaluateQualification(rule: QualificationRule, a: Applicant): Co
       };
     }
   }
+  if (rule.subjects.length && a.subjects?.length) {
+    const hit = matchSubject(rule.subjects, a.subjects);
+    if (hit) {
+      return { ...base, state: "met", message: `You have ${QUAL_LABEL[have]} with ${hit.yours}, and the post accepts ${hit.theirs}${by}.` };
+    }
+  }
   if (rule.subjects.length) {
     return {
       ...base,
@@ -260,6 +268,34 @@ export function evaluateQualification(rule: QualificationRule, a: Applicant): Co
 }
 
 // --------------------------------------------------------------- other
+
+// Words that say nothing about the subject.
+const SUBJECT_STOP = new Set(["in", "of", "and", "or", "the", "with", "any", "a", "an", "degree", "bachelor", "bachelors", "master", "masters",
+  "graduate", "graduation", "post", "from", "recognised", "recognized", "university", "board", "equivalent", "subject", "subjects", "as", "one", "discipline", "branch", "stream"]);
+// Common spellings of the same thing.
+const SUBJECT_ALIAS: Record<string, string> = { maths: "mathematics", math: "mathematics", bio: "biology", engg: "engineering", cse: "computer", cs: "computer", it: "information",
+  btech: "engineering", be: "engineering", mtech: "engineering", me: "engineering", bsc: "science", msc: "science", ba: "arts", ma: "arts", bcom: "commerce", mcom: "commerce",
+  accountancy: "commerce", humanities: "arts", pcm: "mathematics", pcb: "biology", eee: "electrical", ece: "electronics", mech: "mechanical" };
+
+function subjectWords(s: string): Set<string> {
+  return new Set(
+    s.toLowerCase().replace(/\./g, "").split(/[^a-z]+/).filter((w) => w.length > 1 && !SUBJECT_STOP.has(w)).map((w) => SUBJECT_ALIAS[w] ?? w),
+  );
+}
+
+/** The applicant's studied subject that matches one the notice accepts, if any. */
+export function matchSubject(required: string[], studied: string[]): { theirs: string; yours: string } | null {
+  for (const r of required) {
+    const need = subjectWords(r);
+    if (!need.size) continue;
+    for (const y of studied) {
+      const have = subjectWords(y);
+      // Every distinctive word of the requirement must be in what the applicant studied (e.g. "civil engineering").
+      if ([...need].every((w) => have.has(w))) return { theirs: r, yours: y };
+    }
+  }
+  return null;
+}
 
 export function evaluateOther(rule: OtherRule): ConditionResult {
   const base = { key: slug(rule.label), label: rule.label, stated: rule.stated, evidence: [rule.evidence] };

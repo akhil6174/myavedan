@@ -65,6 +65,9 @@ jobs:
         run: node scripts/fetch-snapshot.mjs "$TARGET" && npm run validate:snapshot
 
       - name: Build site
+        env:
+          # Where the site's sign-in, error reports and account data go.
+          PUBLIC_API_BASE: ${{ env.TARGET == 'production' && 'https://api.myavedan.in' || 'https://api-staging.myavedan.in' }}
         run: npm run build
 
       - name: Deploy site (static assets)

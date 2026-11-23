@@ -233,6 +233,31 @@
     fill: currentColor;
   }
 
+  .account-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.3rem 0.7rem 0.3rem 0.35rem;
+    border-radius: 999px;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+  }
+  .account-chip img {
+    border-radius: 999px;
+  }
+  .account-out {
+    font-size: 0.75rem;
+    color: var(--ink-3);
+    text-decoration: underline;
+    cursor: pointer;
+  }
+  .account-in {
+    padding: 0.45rem 1rem;
+  }
+
   .elig {
     display: inline-flex;
     align-items: center;

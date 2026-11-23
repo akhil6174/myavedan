@@ -4,7 +4,7 @@
  * All of it is computed in the browser from public data; nothing is sent anywhere.
  */
 import { evaluatePosts } from "@myavedan/eligibility";
-import { getApplied, getProfile, loadData, newUpdates, setApplied } from "./device";
+import { accountsEnabled, getAccount, getApplied, getProfile, loadData, newUpdates, setApplied, signIn, signOut, studied, syncSaved } from "./device";
 
 const LABEL = {
   yes: { text: "✓ You can apply", cls: "elig-yes" },
@@ -25,7 +25,7 @@ async function paintEligibility() {
   for (const b of badges) {
     const d = data.get(b.dataset.elig!);
     if (!d) continue;
-    const results = evaluatePosts(d.posts as any, { ...p, dob: p.dob || null });
+    const results = evaluatePosts(d.posts as any, { ...p, dob: p.dob || null, subjects: studied(p) } as any);
     const v = results.some((r) => r.verdict === "likely_eligible")
       ? "yes"
       : results.some((r) => r.verdict === "potentially_eligible")
@@ -65,8 +65,32 @@ async function paintUpdatesCount() {
   }
 }
 
+async function paintAccount() {
+  const slots = [...document.querySelectorAll<HTMLElement>("[data-account]")];
+  if (!slots.length || !accountsEnabled) return;
+  const { user } = await getAccount();
+  for (const slot of slots) {
+    slot.replaceChildren();
+    if (user) {
+      const first = (user.name || user.email).split(" ")[0];
+      const link = Object.assign(document.createElement("a"), { href: "/profile/", className: "account-chip", title: user.email });
+      if (user.image) link.append(Object.assign(document.createElement("img"), { src: user.image, alt: "", width: 24, height: 24, referrerPolicy: "no-referrer" }));
+      link.append(document.createTextNode(first));
+      const out = Object.assign(document.createElement("button"), { type: "button", className: "account-out", textContent: "Sign out" });
+      out.addEventListener("click", () => signOut());
+      slot.append(link, out);
+    } else {
+      const btn = Object.assign(document.createElement("button"), { type: "button", className: "btn btn-primary account-in", textContent: "Sign in" });
+      btn.addEventListener("click", () => signIn().catch((e) => alert(e.message)));
+      slot.append(btn);
+    }
+  }
+}
+
 paintEligibility();
 wireApplied();
 paintUpdatesCount();
+paintAccount();
+document.addEventListener("myavedan:saved-changed", () => syncSaved());
 document.addEventListener("myavedan:profile-changed", paintEligibility);
 document.addEventListener("myavedan:applied-changed", paintUpdatesCount);
