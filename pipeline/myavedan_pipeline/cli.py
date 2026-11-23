@@ -25,7 +25,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .compact import compact_pages
 from .convert import ground_and_flag, to_draft
-from .discover import looks_outdated, read_priority, take_turns, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
+from .discover import looks_outdated, looks_recent, read_priority, take_turns, MAX_PDF_BYTES, Candidate, Fetcher, State, find_notice_pdf, is_pdf, notice_score, scan_source
 from .fingerprint import sha256_hex
 from .ingest_client import post_draft
 from .normalise import page_text
@@ -256,47 +256,66 @@ def cmd_discover(args: argparse.Namespace) -> int:
     counts["from_unsure"] = len(todo)
 
     for s in sources:
-        hosts = sorted({host(s["url"]), *EXTRA_HOSTS.get(s["id"], [])})
-        first_visit = not state.sources.get(s["id"], {}).get("checked_at")
-        found, report = scan_source(fetcher, s, hosts, state)
-        unsure = report.pop("_unsure", [])
+        hosts = sorted({host(s["url"]), *EXTRA_HOSTS.get(s["id"], []), *(host(u) for u in s.get("extra_pages", []))})
+        main_report: dict = {}
         new_here = 0
-        # The first scan with the Unsure list only records what is already there; later scans list what's new.
-        baseline = first_visit or not state.sources.get(s["id"], {}).get("unsure_baseline")
-        if report.get("result") == "ok":
-            state.sources.setdefault(s["id"], {})["unsure_baseline"] = True
-        for c in unsure:
-            if baseline:
-                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": "unsure", "text": c.text, "status": "unsure_old", "first_seen": now}
-            else:
-                unsure_found.append((s, c))
-        for c in found:
-            if looks_outdated(c.text, c.url, today_iso):
-                # Names only long-past dates or years: never read, never listed.
-                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "outdated", "first_seen": now}
-            elif first_visit:
-                # Notices already on the site: remember them; later runs read them a few at a time.
-                state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "backlog", "first_seen": now}
-            elif c.kind == "apply_link":
-                # Apply pages: no document to read. Sent in one batch; the API suggests the recruitment.
-                links_found.append((s, c))
-            else:
-                # Notices, results, admit cards, answer keys, cut-offs, corrigenda: all read, so each
-                # becomes a draft filed by what it actually is.
-                todo.append(c)
-        if first_visit:
-            report["first_visit_backlog"] = len(found)
-        else:
-            new_here = sum(1 for c in found if state.seen_urls.get(c.key, {}).get("status") != "outdated")
+        # The site's own page first, then any list pages it has (notices, results, admit cards...).
+        for i, page_url in enumerate([s["url"], *s.get("extra_pages", [])]):
+            page_id = s["id"] if i == 0 else f"{s['id']}@{i}"
+            first_visit = not state.sources.get(page_id, {}).get("checked_at")
+            found, report = scan_source(fetcher, {"id": page_id, "url": page_url}, hosts, state)
+            for c in found:
+                c.source_id = s["id"]
+            unsure = report.pop("_unsure", [])
+            for c in unsure:
+                c.source_id = s["id"]
+            # The first scan with the Unsure list only records what is already there; later scans list what's new.
+            baseline = first_visit or not state.sources.get(page_id, {}).get("unsure_baseline")
+            if report.get("result") == "ok":
+                state.sources.setdefault(page_id, {})["unsure_baseline"] = True
+            for c in unsure:
+                if c.key in state.seen_urls:
+                    continue
+                if baseline:
+                    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": "unsure", "text": c.text, "status": "unsure_old", "first_seen": now}
+                else:
+                    unsure_found.append((s, c))
+            for c in found:
+                if c.key in state.seen_urls and state.seen_urls[c.key].get("status") != "link_pending":
+                    continue  # already seen on another page of this site
+                if looks_outdated(c.text, c.url, today_iso):
+                    # Names only long-past dates or years: never read, never listed.
+                    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text, "status": "outdated", "first_seen": now}
+                    counts["outdated_skipped"] += 1
+                elif first_visit:
+                    # Already on the page at the first visit: only recent ones are read (from the
+                    # backlog, a few per run); older ones are remembered and left alone.
+                    recent = looks_recent(c.text, c.url, today_iso)
+                    state.seen_urls[c.key] = {"url": c.url, "source": c.source_id, "kind": c.kind, "text": c.text,
+                                              "status": "backlog" if recent else "before_launch", "first_seen": now}
+                elif c.kind == "apply_link":
+                    # Apply pages: no document to read. Sent in one batch; the API suggests the recruitment.
+                    links_found.append((s, c))
+                    new_here += 1
+                else:
+                    # Notices, results, admit cards, answer keys, cut-offs, corrigenda: all read, so each
+                    # becomes a draft filed by what it actually is.
+                    todo.append(c)
+                    new_here += 1
+            if first_visit:
+                report["first_visit"] = len(found)
+            if i == 0:
+                main_report = report
+            elif str(report.get("result", "")).startswith("failed"):
+                print(json.dumps({"list_page_failed": page_url, "result": report["result"]}))
+            print(json.dumps({"scan": report}, ensure_ascii=False))
+            sys.stdout.flush()
+            state.save()
         counts["sites"] += 1
         counts["new_found"] += new_here
-        counts["outdated_skipped"] += sum(1 for c in found if state.seen_urls.get(c.key, {}).get("status") == "outdated")
-        site_reports.append(site_report(s, report, new_here))
+        site_reports.append(site_report(s, main_report, new_here))
         if site_reports[-1]["result"] in ("failed", "blocked"):
             counts["sites_failed"] += 1
-        print(json.dumps({"scan": report}, ensure_ascii=False))
-        sys.stdout.flush()
-        state.save()
 
     counts["unsure"] = len(unsure_found)
 

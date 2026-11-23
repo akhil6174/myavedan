@@ -84,6 +84,8 @@ Then:
 - **Later visits.** New links are read in the same run.
 - **Apply links** need no reading; they are sent in one batch and the API suggests which recruitment they belong to.
 - **Unsure links.** A link that matches nothing above but looks like a document (a PDF, or text that mentions a year, exam, post, selection, interview...) and isn't a site menu goes to the **Unsure list** (see section 9). Nothing is dropped silently. The first scan of a site with this feature only records what's already there; only links that appear afterwards are listed.
+- **"View" / "Download" links.** Many sites put the title and date in the table row, not in the link. When a link's own text says nothing, the reader uses its row's text instead, and a date found only in the row is added, so the type and age checks work.
+- **List pages.** Besides its main address, a site can have extra list pages to watch (`extra_pages` in the sources file), e.g. DSSSB's notifications and results pages and HPSC's announcements page. On the first visit to a page, only items dated within the last month are read; older ones are remembered and left alone.
 - **Rotating links.** Some sites (CISF) give the same document a new random address on every visit. Those links are recognised by their title instead, so they aren't read twice.
 
 ## 5. What the reader remembers

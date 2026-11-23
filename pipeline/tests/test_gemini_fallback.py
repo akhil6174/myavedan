@@ -111,3 +111,25 @@ def test_backlog_takes_turns():
     order = [x.source_id for x in take_turns(c, key=lambda x: read_priority(x, t, from_backlog=True))]
     assert set(order[:3]) == {"psssb", "rpsc", "ppsc"}  # every site before any site's second item
     assert order.count("psssb") == 5
+
+
+def test_row_context_for_generic_links():
+    from myavedan_pipeline.discover import extract_links
+    html = """<table>
+      <tr><td>Cut-off marks for Post Code 42/25</td><td>18-11-2026</td><td><a href="/a.pdf">Download</a></td></tr>
+      <tr><td>Advertisement No. 06/2026 Junior Engineer</td><td><a href="/b.pdf">Advertisement No. 06/2026 Junior Engineer</a></td><td>04.11.2026</td></tr>
+    </table><ul><li><a href="/c.pdf"></a> Result of Skill Test 20.11.2026</li></ul><a href="/menu">Home</a>"""
+    got = dict(extract_links(html, "https://x.gov.in/"))
+    assert "Cut-off marks for Post Code 42/25" in got["https://x.gov.in/a.pdf"] and "18-11-2026" in got["https://x.gov.in/a.pdf"]
+    assert got["https://x.gov.in/b.pdf"] == "Advertisement No. 06/2026 Junior Engineer (04.11.2026)"
+    assert "Result of Skill Test" in got["https://x.gov.in/c.pdf"]
+    assert got["https://x.gov.in/menu"] == "Home"
+
+
+def test_looks_recent():
+    from myavedan_pipeline.discover import looks_recent
+    t = "2026-11-23"
+    assert looks_recent("Notice dated 12.11.2026", "https://x/a.pdf", t)
+    assert looks_recent("Notice", "https://x/wp-content/uploads/2026/11/a.pdf", t)
+    assert not looks_recent("Notice dated 12.08.2026", "https://x/a.pdf", t)
+    assert not looks_recent("Recruitment notice", "https://x/a.pdf", t)
