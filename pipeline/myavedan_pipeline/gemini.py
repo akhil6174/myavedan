@@ -74,6 +74,21 @@ SCHEMA: dict[str, Any] = {
                 "properties": {
                     "name": _s("Post name"),
                     "vacancies": {"type": "INTEGER", "description": "Vacancies for this post, -1 if not stated"},
+                    "seats": {
+                        "type": "ARRAY",
+                        "description": "Category-wise vacancies for this post from the vacancy table, empty if not broken down",
+                        "items": {
+                            "type": "OBJECT",
+                            "properties": {
+                                "group": _s("Column heading as written: UR/GEN, EWS, OBC, SC, ST, MBC, BC-A, PwBD, ESM, Women, Sports..."),
+                                "count": {"type": "INTEGER", "description": "Seats in this group"},
+                                "horizontal": {"type": "BOOLEAN", "description": "true for horizontal quotas counted inside the categories (PwBD, ESM, women, sports, dependants)"},
+                            },
+                            "required": ["group", "count", "horizontal"],
+                        },
+                    },
+                    "seats_page": {"type": "INTEGER", "description": "Page of the category-wise table, -1 if none"},
+                    "seats_snippet": _s("The table row for this post copied exactly (max 200 characters), else empty"),
                     "pay": _s("Pay level or scale as written, else empty"),
                     "location": _s("Where the post is, else empty"),
                     **_cite(),
@@ -157,6 +172,7 @@ Rules:
 - Convert dates written as DD.MM.YYYY or DD/MM/YYYY to YYYY-MM-DD. Indian dates are day-first.
 - Read the whole notice, including annexures and tables at the end: post-wise rules, relaxations and fee exemptions are often there.
 - One entry in posts per distinct post. Give each post its own age, qualification and conditions, even if they repeat.
+- When the notice has a category-wise vacancy table, fill seats for each post with every column as written (UR, EWS, OBC, SC, ST, and any horizontal quotas such as PwBD, ESM, women). Don't add a "Total" entry. Leave seats empty if there is no breakdown; never invent one.
 - Always fill age and qualification for every post when the notice states them anywhere (often in a 'brief summary', eligibility section or annexure). Use null only if the notice truly says nothing.
 - other_conditions: experience, domicile, physical standards, typing/skill speed, licences, marks percentage. Mark blocking=true when the notice says it is required.
 - If only a maximum age is given, set min_age to -1 and still fill max_age and as_on.

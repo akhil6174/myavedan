@@ -42,3 +42,10 @@ def test_fee():
 
 def test_nothing_found_flags_nothing():
     assert crosscheck(_draft(total_vacancies=10, fees=[{"amount_inr": 50}], dates=[{"kind": "apply_end", "value": "2026-12-01"}]), {1: "General instructions"}) == []
+
+
+def test_category_seats_add_up():
+    ok = {"vacancies": 10, "rules": [], "seats": [{"group": "UR", "count": 5}, {"group": "OBC", "count": 3}, {"group": "SC", "count": 2}, {"group": "PwBD", "count": 1, "horizontal": True}]}
+    bad = {"vacancies": 12, "rules": [], "seats": [{"group": "UR", "count": 5}, {"group": "OBC", "count": 3}]}
+    assert codes(crosscheck(_draft(posts=[ok]), {1: ""})) == []
+    assert codes(crosscheck(_draft(posts=[bad]), {1: ""})) == ["seats_dont_add_up"]

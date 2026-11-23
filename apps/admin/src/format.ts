@@ -17,6 +17,14 @@ export function describe(field: Pick<Field, "group" | "key">, value: unknown): s
     }
     case "posts":
       if (field.key === "total_vacancies") return [String(v)];
+      if (field.key.endsWith(".seats") && Array.isArray(v)) {
+        const main = v.filter((s: any) => !s.horizontal);
+        const within = v.filter((s: any) => s.horizontal);
+        return [
+          main.map((s: any) => `${s.group} ${s.count}`).join(" · ") + (main.length ? ` (total ${main.reduce((n: number, s: any) => n + s.count, 0)})` : ""),
+          within.length ? `Within these: ${within.map((s: any) => `${s.group} ${s.count}`).join(" · ")}` : "",
+        ].filter(Boolean);
+      }
       return [`${v.name} · ${v.vacancies ?? "vacancies not stated"} vacancies${v.pay ? ` · ${v.pay}` : ""}${v.location ? ` · ${v.location}` : ""}`];
     case "eligibility":
       if (v.kind === "dob_window") {

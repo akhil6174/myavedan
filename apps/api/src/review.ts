@@ -74,8 +74,12 @@ export function reviewFields(draft: Draft, flags: Flag[] = []): ReviewField[] {
     add(`dates.${i}`, "dates", d.label ?? DATE_LABEL[d.kind as DateKind] ?? label(String(d.kind)), true, d, d.evidence ?? null);
   });
   (draft.posts ?? []).forEach((p: any, i: number) => {
-    const { rules, evidence, ...post } = p;
+    const { rules, evidence, seats, seats_evidence, ...post } = p;
     add(`posts.${i}`, "posts", `Post: ${p.name}`, true, post, evidence ?? null);
+    if (Array.isArray(seats) && seats.length) {
+      // Category-wise seats: wrong numbers here mislead candidates as much as a wrong total.
+      add(`posts.${i}.seats`, "posts", `${p.name}: seats by category`, true, seats, seats_evidence ?? null);
+    }
     (rules ?? []).forEach((r: any, j: number) => {
       const what = r.kind === "dob_window" ? "Age" : r.kind === "qualification" ? "Qualification" : r.label ?? "Other condition";
       add(`posts.${i}.rules.${j}`, "eligibility", `${p.name}: ${what}`, true, r, r.evidence ?? null);
