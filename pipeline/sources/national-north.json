@@ -161,7 +161,7 @@
       "organization": "Border Security Force recruitment",
       "url": "https://rectt.bsf.gov.in/",
       "status": "ok",
-      "note": "",
+      "note": " Notices and results are on https://rectt.bsf.gov.in/updates, built by JavaScript: needs a custom reader.",
       "approved_by_owner": true
     },
     {
@@ -333,7 +333,10 @@
       "url": "https://hpsc.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": true
+      "approved_by_owner": true,
+      "extra_pages": [
+        "https://hpsc.gov.in/en-us/Examination/Admit-card"
+      ]
     },
     {
       "id": "hssc",
@@ -351,7 +354,11 @@
       "url": "https://dsssb.delhi.gov.in/",
       "status": "ok",
       "note": "",
-      "approved_by_owner": true
+      "approved_by_owner": true,
+      "extra_pages": [
+        "https://dsssb.delhi.gov.in/notifications",
+        "https://dsssb.delhi.gov.in/results"
+      ]
     },
     {
       "id": "chandigarh",

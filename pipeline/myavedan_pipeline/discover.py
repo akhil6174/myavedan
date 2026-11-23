@@ -174,6 +174,22 @@ def is_unsure(text: str, url: str) -> bool:
     return len(t) >= 15 and bool(re.search(r"20\d\d|exam|post|vacan|select|candidate|interview|merit|skill test|document verification|dv|walk.?in", t, re.I))
 
 
+def looks_recent(text: str, url: str, today: str, days: int = 30) -> bool:
+    """The link names a date within the last month (or this month and year), so it's still news."""
+    import datetime as _dt
+
+    hay = f"{text} {urllib.parse.unquote(url)}"
+    t = _dt.date.fromisoformat(today)
+    for d, m, y in _DMY.findall(hay):
+        try:
+            if 0 <= (t - _dt.date(int(y), int(m), int(d))).days <= days:
+                return True
+        except ValueError:
+            pass
+    month = re.compile(rf"/{t.year}/{t.month:02d}/|(?<!\d){t.month:02d}[./-]{t.year}(?!\d)|{t.strftime('%b')}\w*[\s,.-]*{t.year}", re.I)
+    return bool(month.search(hay))
+
+
 def classify(text: str, url: str) -> str | None:
     """Document kind for a link, or None if it doesn't look like a recruitment document."""
     hay = f"{text} {urllib.parse.unquote(url)}"
@@ -185,43 +201,75 @@ def classify(text: str, url: str) -> str | None:
     return None
 
 
+# Link text that says nothing about the document: the title and date are elsewhere in its row.
+GENERIC_TEXT = re.compile(
+    r"^\s*(view|download|click here|click|here|link|pdf|open|details?|read more|more|see|notice|"
+    r"डाउनलोड|देखें|यहाँ क्लिक करें|\W*)\s*(\(.*\))?\s*$",
+    re.I,
+)
+_ROW_TAGS = {"tr", "li"}
+
+
 class _Links(HTMLParser):
+    """Links with their text, and the text of the table row / list item each one sits in."""
+
     def __init__(self) -> None:
         super().__init__()
-        self.links: list[tuple[str, str]] = []
+        self.links: list[tuple[str, str, list[str] | None]] = []
         self._href: str | None = None
         self._text: list[str] = []
+        self._rows: list[list[str]] = []  # open rows, innermost last
 
     def handle_starttag(self, tag, attrs):
+        if tag in _ROW_TAGS:
+            self._rows.append([])
         if tag == "a":
             self._href = dict(attrs).get("href")
             self._text = []
+            self._row = self._rows[-1] if self._rows else None
 
     def handle_data(self, data):
         if self._href is not None:
             self._text.append(data)
+        for row in self._rows:
+            row.append(data)
 
     def handle_endtag(self, tag):
         if tag == "a" and self._href is not None:
-            self.links.append((self._href, " ".join(" ".join(self._text).split())))
+            self.links.append((self._href, " ".join(" ".join(self._text).split()), self._row))
             self._href = None
+        if tag in _ROW_TAGS and self._rows:
+            self._rows.pop()
+
+
+def describe_link(text: str, row: list[str] | None) -> str:
+    """What a link is about: its own text, or, when that says nothing ("View", "Download", empty),
+    the text of its row. A date that is only in the row is added, so age checks can see it."""
+    row_text = " ".join(" ".join(row or []).split())
+    if row_text and (not text or GENERIC_TEXT.match(text)):
+        return row_text[:300]
+    if row_text and not _DMY.search(text):
+        dates = _DMY.findall(row_text)
+        if dates:
+            return f"{text} ({'.'.join(dates[0])})"
+    return text
 
 
 def extract_links(html: str, base_url: str) -> list[tuple[str, str]]:
-    """(absolute url, link text) for every link, de-duplicated, fragments removed."""
+    """(absolute url, description) for every link, de-duplicated, fragments removed."""
     parser = _Links()
     try:
         parser.feed(html)
     except Exception:  # broken HTML: keep what was parsed
         pass
     seen, out = set(), []
-    for href, text in parser.links:
+    for href, text, row in parser.links:
         if not href or href.startswith(("javascript:", "mailto:", "tel:", "#")):
             continue
         url = urllib.parse.urljoin(base_url, href.strip()).split("#")[0]
         if url not in seen:
             seen.add(url)
-            out.append((url, text))
+            out.append((url, describe_link(text, row)))
     return out
 
 
