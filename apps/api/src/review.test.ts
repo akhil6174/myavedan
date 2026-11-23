@@ -119,3 +119,14 @@ describe("category seats", () => {
     expect((fields.find((f) => f.key === "posts.0")?.value as any).seats).toBeUndefined();
   });
 });
+
+import { outdatedReason } from "./routes";
+
+describe("outdated drafts never reach the queue", () => {
+  it("refuses earlier-year recruitments and closed deadlines", () => {
+    expect(outdatedReason({ title: "Group D Recruitment 2025", advt_no: "08/2025", dates: [] }, "2026-11-23")).toMatch(/2025/);
+    expect(outdatedReason({ title: "PST", advt_no: "13/2024, 02/2026", dates: [] }, "2026-11-23")).toBeNull();
+    expect(outdatedReason({ title: "Clerk 2026", dates: [{ kind: "apply_end", value: "2026-11-01T23:59" }] }, "2026-11-23")).toMatch(/closed/);
+    expect(outdatedReason({ title: "Clerk 2026", dates: [{ kind: "apply_end", value: "2026-12-15" }] }, "2026-11-23")).toBeNull();
+  });
+});

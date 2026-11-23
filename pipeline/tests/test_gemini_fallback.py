@@ -34,13 +34,17 @@ def test_outdated_rules():
     from myavedan_pipeline.discover import looks_outdated
     today = "2026-11-22"
     assert looks_outdated("Result of Advt 05/2023", "https://x.gov.in/a.pdf", today)
+    assert looks_outdated("Counseling notice Advt 08 of 2025", "https://x.gov.in/a.pdf", today)
     assert looks_outdated("Notice dated 03.02.2026", "https://x.gov.in/a.pdf", today)
     assert not looks_outdated("Notice dated 12.11.2026", "https://x.gov.in/a.pdf", today)
     assert not looks_outdated("Recruitment notice", "https://x.gov.in/a.pdf", today)
     closed = {"dates": [{"kind": "apply_end", "value": "2026-09-01"}]}
     assert outdated_reason(closed, "notice", today)
     with_exam = {"dates": [{"kind": "apply_end", "value": "2026-09-01"}, {"kind": "exam", "value": "2026-12-10"}]}
-    assert outdated_reason(with_exam, "notice", today) is None
+    assert outdated_reason(with_exam, "notice", today)  # owner: closed deadline is never listed
+    assert outdated_reason({"title": "Group D Recruitment 2025 (Counseling)", "advt_no": "08/2025", "dates": []}, "result", today)
+    assert outdated_reason({"title": "PST schedule", "advt_no": "13/2024, 02/2026", "dates": []}, "result", today) is None
+    assert outdated_reason({"title": "Clerk 2026", "dates": [{"kind": "apply_end", "value": "2026-12-15"}]}, "notice", today) is None
     old_result = {"dates": [{"kind": "result", "value": "2026-06-01"}]}
     assert outdated_reason(old_result, "result", today)
     assert outdated_reason({"dates": [{"kind": "exam", "value": "2026-11-07"}]}, "result", today) is None
