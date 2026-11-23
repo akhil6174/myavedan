@@ -70,6 +70,9 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? "https://myavedan.in
       document.dispatchEvent(new CustomEvent("myavedan:status-ready"));
     </script>
     <script>
+      import "../lib/badges";
+    </script>
+    <script>
       // Saved recruitments live on this device only. If storage is blocked, saving simply doesn't stick.
       const KEY = "myavedan:saved";
       const read = (): string[] => {

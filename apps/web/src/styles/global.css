@@ -233,6 +233,20 @@
     fill: currentColor;
   }
 
+  .elig {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid transparent;
+  }
+  .elig-yes { background: var(--ok-soft); color: var(--ok); border-color: #a7f3d0; }
+  .elig-maybe { background: var(--accent-soft); color: var(--accent-ink); border-color: #fed7aa; }
+  .elig-no { background: var(--bad-soft); color: var(--bad); border-color: #fecdd3; }
+  .elig-unknown { background: var(--sunk); color: var(--ink-2); }
+
   .tag {
     display: inline-flex;
     align-items: center;
