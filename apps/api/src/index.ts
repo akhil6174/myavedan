@@ -21,7 +21,7 @@
 import type { Env } from "./env";
 import { reviewerFor } from "./access";
 import { auth, isAuthConfigured, isDevLogin, isGoogleConfigured } from "./auth";
-import { bulkApprove, corrections, decision, fieldDecision, queue, setKind, setRole, updateCorrection, users, version } from "./admin";
+import { bulkApprove, corrections, decision, fieldDecision, listPublished, queue, setKind, setRole, updateCorrection, users, version, withdrawOpportunity } from "./admin";
 import { corsHeaders, json, problem } from "./http";
 import { correction, health, ingest, knownHashes, snapshot } from "./routes";
 import { decideUnsure, healthReport, listUnsure, receiveRun, takeQueued } from "./health";
@@ -58,6 +58,16 @@ async function admin(request: Request, env: Env, ctx: ExecutionContext, path: st
     if (path === "/api/admin/users" && method === "GET") return users(env);
     m = path.match(/^\/api\/admin\/users\/([\w-]+)\/role$/);
     if (m && method === "POST") return setRole(request, env, m[1]!, reviewer);
+  }
+
+  if (path === "/api/admin/published" || path.startsWith("/api/admin/published/")) {
+    if (reviewer.role !== "admin") return problem(403, "only admins remove published notices");
+    if (path === "/api/admin/published" && method === "GET") return listPublished(env);
+    m = path.match(/^\/api\/admin\/published\/([\w-]+)\/withdraw$/);
+    if (m && method === "POST")
+      return withdrawOpportunity(request, env, m[1]!, reviewer, () =>
+        ctx.waitUntil(runPublishTrigger(env, { force: true }).then((r) => console.log(JSON.stringify({ job: "withdraw-publish", ...r })))),
+      );
   }
 
   if (path === "/api/admin/links" && method === "GET") return listLinks(env);
