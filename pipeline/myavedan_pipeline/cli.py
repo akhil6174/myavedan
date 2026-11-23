@@ -44,25 +44,32 @@ KINDS = {"notice", "corrigendum", "admit_card", "answer_key", "result", "cutoff"
 UTS = {"delhi", "chandigarh", "jammu-kashmir", "ladakh"}
 
 
+_YEAR_RE = re.compile(r"(?<!\d)(20[0-3]\d)(?!\d)")
+
+
 def outdated_reason(draft: dict, kind: str, today: str) -> str | None:
-    """Not worth listing any more: an opening whose application window and exam are over, or an
-    update (result, admit card...) whose dates are all more than 60 days old."""
-    days = {}
+    """Not to be listed (owner's rules):
+    - the recruitment belongs to an earlier year: every year in its title and advertisement number is
+      before this year (e.g. "Advt 08/2025", "Screening Examination 2021");
+    - the last date to apply has already passed;
+    - an update (result, admit card...) whose dates are all more than 60 days old."""
+    title = draft.get("title") if isinstance(draft.get("title"), str) else ""
+    advt = draft.get("advt_no") if isinstance(draft.get("advt_no"), str) else ""
+    years = [int(y) for y in _YEAR_RE.findall(f"{title} {advt}")]
+    if years and max(years) < int(today[:4]):
+        return f"belongs to a {max(years)} recruitment"
+    days: dict[str, list[str]] = {}
     for d in draft.get("dates") or []:
         v = d.get("value")
         if isinstance(v, str) and len(v) >= 10:
             days.setdefault(d.get("kind"), []).append(v[:10])
+    if days.get("apply_end") and max(days["apply_end"]) < today:
+        return f"applications closed on {max(days['apply_end'])}"
     every = [v for vs in days.values() for v in vs]
-    if not every:
-        return None
-    if kind == "notice":
-        future = [v for k in ("apply_end", "fee_end", "correction_end", "exam", "admit_card", "result") for v in days.get(k, []) if v >= today]
-        if days.get("apply_end") and not future:
-            return f"applications closed on {max(days['apply_end'])}"
-        return None
-    cutoff = (datetime.fromisoformat(today) - timedelta(days=60)).date().isoformat()
-    if max(every) < cutoff:
-        return f"latest date in it is {max(every)}"
+    if every and kind != "notice":
+        cutoff = (datetime.fromisoformat(today) - timedelta(days=60)).date().isoformat()
+        if max(every) < cutoff:
+            return f"latest date in it is {max(every)}"
     return None
 
 
@@ -380,7 +387,7 @@ def cmd_discover(args: argparse.Namespace) -> int:
     state.save()
     counts.update(
         gemini_calls=state.usage.get(today, 0) - used,
-        drafts_sent=sum(1 for r in results if r.get("ingest")),
+        drafts_sent=sum(1 for r in results if r.get("ingest") and r["ingest"].get("status") != "outdated"),
         outdated_after_reading=sum(1 for r in results if r.get("outdated")),
         deferred=sum(1 for r in results if r.get("deferred")),
         read_failed=failed,

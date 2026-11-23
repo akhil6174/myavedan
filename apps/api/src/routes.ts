@@ -42,6 +42,21 @@ export type IngestDraft = z.infer<typeof IngestDraft>;
 
 const MAX_INGEST_BYTES = 5 * 1024 * 1024;
 
+/**
+ * Owner's rule: the queue never gets drafts that belong to an earlier year's recruitment (every year
+ * in the title and advertisement number is before this year) or whose last date to apply has passed.
+ */
+export function outdatedReason(draft: Record<string, unknown>, todayIso: string): string | null {
+  const text = (v: unknown) => (typeof v === "string" ? v : v && typeof v === "object" && typeof (v as any).value === "string" ? (v as any).value : "");
+  const years = [...`${text(draft.title)} ${text(draft.advt_no)}`.matchAll(/(?<!\d)(20[0-3]\d)(?!\d)/g)].map((m) => Number(m[1]));
+  if (years.length && Math.max(...years) < Number(todayIso.slice(0, 4))) return `belongs to a ${Math.max(...years)} recruitment`;
+  const ends = (Array.isArray(draft.dates) ? draft.dates : [])
+    .filter((d: any) => d?.kind === "apply_end" && typeof d.value === "string")
+    .map((d: any) => String(d.value).slice(0, 10));
+  if (ends.length && ends.sort().at(-1)! < todayIso.slice(0, 10)) return `applications closed on ${ends.at(-1)}`;
+  return null;
+}
+
 export async function ingest(request: Request, env: Env): Promise<Response> {
   if (!env.INGEST_HMAC_SECRET) return problem(503, "ingest is not configured");
   const raw = await readBody(request, MAX_INGEST_BYTES);
@@ -59,6 +74,8 @@ export async function ingest(request: Request, env: Env): Promise<Response> {
   const parsed = IngestDraft.safeParse(body);
   if (!parsed.success) return problem(422, "invalid draft", { issues: parsed.error.issues.slice(0, 20) });
   const d = parsed.data;
+  const stale = outdatedReason(d.draft, istNow().slice(0, 10));
+  if (stale) return json({ status: "outdated", reason: stale });
 
   // The source must be registered, and the document must sit on one of its organisation's official hosts.
   const source = await env.DB.prepare(

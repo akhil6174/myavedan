@@ -148,7 +148,7 @@ def looks_outdated(text: str, url: str, today: str, max_age_days: int = 150) -> 
     if dates:
         return (t - max(dates)).days > max_age_days
     years = [int(y) for y in _YEAR.findall(hay)]
-    return bool(years) and max(years) < t.year - 1
+    return bool(years) and max(years) < t.year  # only earlier years named: an earlier recruitment
 
 
 # Site furniture: never a recruitment document.
