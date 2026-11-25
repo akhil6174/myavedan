@@ -116,6 +116,24 @@ def process(pdf: Path, *, source: dict, document_url: str, dry_run: bool, model:
     return process_bytes(pdf.read_bytes(), str(pdf.relative_to(ROOT)), source=source, document_url=document_url, dry_run=dry_run, model=model)
 
 
+_TABLE_HINT = re.compile(r"vacanc|category.?wise|force.?wise|post.?wise|seats|UR|OBC|EWS|grand total|रिक्ति", re.I)
+
+
+def table_page_images(data: bytes, parsed: list) -> list[tuple[int, bytes]]:
+    """Scanned (OCR) pages that talk about vacancies or categories: their tables are often pictures OCR
+    can't read, so Gemini also gets the page image. At most 4 pages, at a modest resolution."""
+    wanted = [p.number for p in parsed if p.ocr and _TABLE_HINT.search(p.text or "")][:4]
+    if not wanted:
+        return []
+    import pymupdf as fitz
+
+    out: list[tuple[int, bytes]] = []
+    with fitz.open(stream=data, filetype="pdf") as doc:
+        for n in wanted:
+            out.append((n, doc[n - 1].get_pixmap(dpi=130).tobytes("png")))
+    return out
+
+
 def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, dry_run: bool, model: str | None, kind: str = "notice", insecure_tls: bool = False) -> dict:
     digest = sha256_hex(data)
     started = time.time()
@@ -128,12 +146,19 @@ def process_bytes(data: bytes, label: str, *, source: dict, document_url: str, d
     readable = [(n, t) for n, t in sorted(pages.items()) if n not in unread]
     today = datetime.now(IST).date().isoformat()
     org = organization_for(source, document_url)
-    hosts = sorted({host(source["url"]), host(document_url)})
+    hosts = sorted({host(source["url"]), host(document_url), *EXTRA_HOSTS.get(source.get("id", ""), [])})
 
-    extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model)
+    images = table_page_images(data, parsed)
+    extraction, usage = gemini.extract_resilient(compact_pages(readable), model=model, images=images)
     draft = to_draft(extraction, organization=org, notice_url=document_url, official_page=source["url"], today=today)
     draft, flags = ground_and_flag(draft, pages, hosts, unread)
-    flags += crosscheck(draft, pages)  # second, rule-based read of last date, vacancies, age, fee
+    flags += crosscheck(draft, pages)
+    if images:
+        # Facts read from a page image can't be matched to the OCR text: say so plainly instead of "quote not found".
+        image_pages = {n for n, _ in images}
+        for f in flags:
+            if f["code"] == "ungrounded" and any(f"page {n}" in f["message"] for n in image_pages):
+                f["code"], f["message"] = "read_from_image", "Read from the scanned table image on this page. Check the numbers against the table in the PDF."  # second, rule-based read of last date, vacancies, age, fee
     read_kind = extraction.get("document_kind")
     stale = outdated_reason(draft, read_kind if read_kind in KINDS else kind, today)
     if stale:
@@ -231,7 +256,7 @@ def cmd_golden(args: argparse.Namespace) -> int:
 
 
 # Extra official hosts some organisations publish on (keep in step with scripts/sources_sql.py).
-EXTRA_HOSTS = {"sbi": ["sbi.co.in"], "rrb-apply": ["rrbapply.gov.in"]}
+EXTRA_HOSTS = {"sbi": ["sbi.co.in"], "rrb-apply": ["rrbapply.gov.in"], "bsf": ["bsf.mha.gov.in", "bsf.gov.in"]}
 
 
 def state_path() -> Path:

@@ -172,6 +172,7 @@ Rules:
 - Convert dates written as DD.MM.YYYY or DD/MM/YYYY to YYYY-MM-DD. Indian dates are day-first.
 - Read the whole notice, including annexures and tables at the end: post-wise rules, relaxations and fee exemptions are often there.
 - One entry in posts per distinct post. Give each post its own age, qualification and conditions, even if they repeat.
+- When the vacancy table splits a post by force, organisation, department, zone or unit (e.g. BSF, CRPF, CISF, ITBP, SSB, AR) and/or by gender (male/female), make one posts entry per row of that split, named like "Sub-Inspector (GD) - BSF - Male", with that row's vacancies and seats. Never merge such rows into one post. The total_vacancies is still the overall total.
 - When the notice has a category-wise vacancy table, fill seats for each post with every column as written (UR, EWS, OBC, SC, ST, and any horizontal quotas such as PwBD, ESM, women). Don't add a "Total" entry. Leave seats empty if there is no breakdown; never invent one.
 - Always fill age and qualification for every post when the notice states them anywhere (often in a 'brief summary', eligibility section or annexure). Use null only if the notice truly says nothing.
 - other_conditions: experience, domicile, physical standards, typing/skill speed, licences, marks percentage. Mark blocking=true when the notice says it is required.
@@ -216,7 +217,8 @@ def page_text(pages: list[tuple[int, str]]) -> str:
     return "\n".join(f"=== PAGE {n} ===\n{text.strip()}" for n, text in pages)
 
 
-def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | None = None, retries: int = 2) -> tuple[dict, dict]:
+def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | None = None, retries: int = 2,
+            images: list[tuple[int, bytes]] | None = None) -> tuple[dict, dict]:
     """Returns (extraction, usage). Raises GeminiError on API or format failure."""
     key = key or os.environ.get("GEMINI_API_KEY", "")
     if not key:
@@ -224,7 +226,7 @@ def extract(pages: list[tuple[int, str]], key: str | None = None, model: str | N
     model = model or os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL
     body = {
         "systemInstruction": {"parts": [{"text": INSTRUCTIONS}]},
-        "contents": [{"role": "user", "parts": [{"text": f"<notice>\n{page_text(pages)}\n</notice>"}]}],
+        "contents": [{"role": "user", "parts": [{"text": f"<notice>\n{page_text(pages)}\n</notice>"}, *_image_parts(images)]}],
         "generationConfig": {
             "responseMimeType": "application/json",
             "responseSchema": SCHEMA,
@@ -270,15 +272,27 @@ def is_busy(error: Exception) -> bool:
     return any(marker in text for marker in ("Gemini API 503", "UNAVAILABLE", "high demand", "Gemini API 429", "RESOURCE_EXHAUSTED", "quota exhausted", "did not answer in time"))
 
 
-def extract_resilient(pages: list[tuple[int, str]], model: str | None = None) -> tuple[dict, dict]:
+def _image_parts(images: list[tuple[int, bytes]] | None) -> list[dict]:
+    """Scanned pages whose tables OCR couldn't read, as images, each labelled with its page number so
+    citations still point at the right page."""
+    import base64
+
+    parts: list[dict] = []
+    for n, png in images or []:
+        parts.append({"text": f"=== PAGE {n} (image of the scanned page: read its tables from this image) ==="})
+        parts.append({"inline_data": {"mime_type": "image/png", "data": base64.b64encode(png).decode()}})
+    return parts
+
+
+def extract_resilient(pages: list[tuple[int, str]], model: str | None = None, images: list[tuple[int, bytes]] | None = None) -> tuple[dict, dict]:
     """The default model, then newer-to-older fallbacks if Google says it's overloaded, then lite."""
     if model:
-        return extract(pages, model=model)
+        return extract(pages, model=model, images=images)
     chain = [os.environ.get("GEMINI_MODEL") or DEFAULT_MODEL, *FALLBACK_MODELS, LITE_MODEL]
     last: Exception | None = None
     for i, m in enumerate(chain):
         try:
-            ex, usage = extract(pages, model=m, retries=1 if i < len(chain) - 1 else 2)
+            ex, usage = extract(pages, model=m, retries=1 if i < len(chain) - 1 else 2, images=images)
             if i:
                 usage = {**usage, "fallback_from": chain[0], "lite": m == LITE_MODEL}
             return ex, usage
